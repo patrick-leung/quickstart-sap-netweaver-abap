@@ -18,6 +18,7 @@
                         "PublicSubnet1CIDR",
                         "PublicSubnet2CIDR",
                         "PrivateSubnet1AID",
+                        "ApplicationCIDR",
                         "PublicSubnet1ID"
                     ]
                 },
@@ -35,7 +36,8 @@
                         "HANAHostCount",
                         "HANAMasterPass",
                         "Encryption",
-                        "VolumeType",
+                        "VolumeTypeHanaData",
+                        "VolumeTypeHanaLog",
                         "KeyName",
                         "HANAInstallMedia",
                         "EnableLogging",
@@ -226,8 +228,11 @@
                 "SAPNetWeaverPass": {
                     "default": "SAP NetWeaver password"
                 },
-                "VolumeType": {
-                    "default": "EBS storage volume type"
+                "VolumeTypeHanaData": {
+                    "default": "Choose storage volume type for SAP HANA Data"
+                },
+                "VolumeTypeHanaLog": {
+                    "default": "Choose storage volume type for SAP HANA Log"
                 },
                 "VPCID": {
                     "default": "VPC ID"
@@ -236,6 +241,10 @@
         }
     },
     "Parameters": {
+        "ApplicationCIDR": {
+            "Description": "The existing private subnet #2 in your VPC where you want to deploy SAP App Server Cluster.",
+            "Type": "AWS::EC2::Subnet::Id"
+        },
         "AutoRecoveryAAS": {
             "Type": "String",
             "Description": "EC2 Automatic recovery feature",
@@ -547,14 +556,23 @@
             "Description": "UID (default is 1001) for the SIDadm user.",
             "Type": "String"
         },
-        "VolumeType": {
+        "VolumeTypeHanaData": {
+            "Type": "String",
+            "Description": "EBS volume type for SAP HANA Data: General Purpose SSD (gp2) or Provisioned IOPS SSD (io1).",
+            "Default": "gp2",
             "AllowedValues": [
                 "gp2",
                 "io1"
-            ],
+            ]
+        },
+        "VolumeTypeHanaLog": {
+            "Type": "String",
+            "Description": "EBS volume type for SAP HANA Log: General Purpose SSD (gp2) or Provisioned IOPS SSD (io1).",
             "Default": "gp2",
-            "Description": "EBS volume type: General Purpose SSD (gp2) or Provisioned IOPS SSD (io1).",
-            "Type": "String"
+            "AllowedValues": [
+                "gp2",
+                "io1"
+            ]
         },
         "VPCID": {
             "Description": "The existing Amazon VPC where you want to deploy SAP App Server Cluster.",
@@ -942,6 +960,9 @@
                     "MyInstanceType": {
                         "Ref": "HANAInstanceType"
                     },
+                    "ApplicationCIDR": {
+                        "Ref": "PrivateSubnet2CIDR"
+                    },
                     "PrivSubCIDR": {
                         "Ref": "PrivateSubnet1CIDR"
                     },
@@ -954,8 +975,11 @@
                     "SID": {
                         "Ref": "SID"
                     },
-                    "VolumeType": {
-                        "Ref": "VolumeType"
+                    "VolumeTypeHanaData": {
+                        "Ref": "VolumeTypeHanaData"
+                    },
+                    "VolumeTypeHanaLog": {
+                        "Ref": "VolumeTypeHanaLog"
                     },
                     "VPCID": {
                         "Ref": "VPCID"
