@@ -124,7 +124,11 @@
         "ParameterValue": "2001"
     },
     {
-        "ParameterKey": "VolumeType",
+        "ParameterKey": "VolumeTypeHanaData",
+        "ParameterValue": "gp2"
+    },
+    {
+        "ParameterKey": "VolumeTypeHanaLog",
         "ParameterValue": "gp2"
     },
     {
