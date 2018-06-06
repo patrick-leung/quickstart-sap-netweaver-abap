@@ -3,11 +3,9 @@
 
 
 #
-
 #   This code was written by somckitk@amazon.com.
 #   This sample code is provided on an "AS IS" BASIS,
 #   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-
 #
 
 
@@ -28,13 +26,24 @@ HOSTS_FILE="/etc/hosts"
 HOSTNAME_FILE="/etc/HOSTNAME"
 ETC_SVCS="/etc/services"
 SAPMNT_SVCS="/sapmnt/SWPM/services"
-ASCS_INI_FILE="/sapmnt/SWPM/ASCS_00_Linux_HDB.params"
-PAS_INI_FILE="/sapmnt/SWPM/PASX_D00_Linux_HDB.params"
-DB_INI_FILE="/sapmnt/SWPM/DB_00_Linux_HDB.params"
-ASCS_PRODUCT="NW_ABAP_ASCS:NW740SR2.HDB.PIHA"
-DB_PRODUCT="NW_ABAP_DB:NW740SR2.HDB.PI"
-PAS_PRODUCT="NW_ABAP_CI:NW740SR2.HDB.PIHA"
-SW_TARGET="/sapmnt/SWPM"
+
+#NW7.4 support
+#ASCS_INI_FILE="/sapmnt/SWPM/ASCS_00_Linux_HDB.params"
+#PAS_INI_FILE="/sapmnt/SWPM/PASX_D00_Linux_HDB.params"
+#DB_INI_FILE="/sapmnt/SWPM/DB_00_Linux_HDB.params"
+#ASCS_PRODUCT="NW_ABAP_ASCS:NW740SR2.HDB.PIHA"
+#DB_PRODUCT="NW_ABAP_DB:NW740SR2.HDB.PI"
+#PAS_PRODUCT="NW_ABAP_CI:NW740SR2.HDB.PIHA"
+
+#NW7.5 support
+#ASCS_NW75_INI_FILE="/sapmnt/SWPM/NW75/ASCS_00_Linux_HDB.params"
+#PAS_NW75_INI_FILE="/sapmnt/SWPM/NW75/PASX_D00_Linux_HDB.params"
+#DB_NW75_INI_FILE="/sapmnt/SWPM/NW75/DB_00_Linux_HDB.params"
+#ASCS_NW75_PRODUCT="NW_ABAP_ASCS:NW750.HDB.ABAPHA"
+#DB_NW75_PRODUCT="NW_ABAP_DB:NW750.HDB.ABAPHA"
+#PAS_NW75_PRODUCT="NW_ABAP_CI:NW750.HDB.ABAPHA"
+
+
 ASCS_DONE="/sapmnt/SWPM/ASCS_DONE"
 PAS_DONE="/sapmnt/SWPM/PAS_DONE"
 MASTER_HOSTS="/sapmnt/SWPM/master_etc_hosts"
@@ -43,9 +52,40 @@ REGION=$(curl http://169.254.169.254/latest/dynamic/instance-identity/document/ 
 #
 ###  Variables below need to be CUSTOMIZED for your environment  ###
 #
-HOSTNAME="$(hostname)"
+HOSTNAME=$(hostname)
 
 ###Functions###
+
+#Set variables based on which SAP NW version we are installing
+
+if [ "$INSTALL_SAP_VERSION" == "SAP-NetWeaver-7.4" ]
+then
+
+    ASCS_INI_FILE="/sapmnt/SWPM/ASCS_00_Linux_HDB.params"
+    PAS_INI_FILE="/sapmnt/SWPM/PASX_D00_Linux_HDB.params"
+    DB_INI_FILE="/sapmnt/SWPM/DB_00_Linux_HDB.params"
+    ASCS_PRODUCT="NW_ABAP_ASCS:NW740SR2.HDB.PIHA"
+    DB_PRODUCT="NW_ABAP_DB:NW740SR2.HDB.PI"
+    PAS_PRODUCT="NW_ABAP_CI:NW740SR2.HDB.PIHA"
+    SW_TARGET="/sapmnt/SWPM"
+    SRC_INI_DIR="/root/install"
+    SAPINST="/sapmnt/SWPM/sapinst"
+
+else
+
+    ASCS_INI_FILE="/sapmnt/SWPM/NW75/ASCS_00_Linux_HDB.params"
+    PAS_INI_FILE="/sapmnt/SWPM/NW75/PASX_D00_Linux_HDB.params"
+    DB_INI_FILE="/sapmnt/SWPM/NW75/DB_00_Linux_HDB.params"
+    ASCS_PRODUCT="NW_ABAP_ASCS:NW750.HDB.ABAPHA"
+    DB_PRODUCT="NW_ABAP_DB:NW750.HDB.ABAPHA"
+    PAS_PRODUCT="NW_ABAP_CI:NW750.HDB.ABAPHA"
+    SW_TARGET="/sapmnt/SWPM/NW75"
+    SRC_INI_DIR="/root/install/NW75"
+    SAPINST="/sapmnt/SWPM/NW75/sapinst"
+
+fi
+
+
 set_install_jq () {
 #install jq s/w
 
@@ -129,6 +169,10 @@ set_dbinifile() {
      sed -i  "/nwUsers.sidAdmUID/ c\nwUsers.sidAdmUID = ${SIDadmUID}" $DB_INI_FILE
      sed -i  "/nwUsers.sapsysGID/ c\nwUsers.sapsysGID = ${SAPsysGID}" $DB_INI_FILE
 
+     #set the CD location based on $SW_TARGET
+     sed -i  "/SAPINST.CD.PACKAGE.KERNEL/ c\SAPINST.CD.PACKAGE.KERNEL = ${SW_TARGET}/KERN_CD" $DB_INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.RDBMS/ c\SAPINST.CD.PACKAGE.RDBMS = ${SW_TARGET}/HDB_CLNTCD" $DB_INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.LOAD/ c\SAPINST.CD.PACKAGE.LOAD = ${SW_TARGET}/EXP_CD" $DB_INI_FILE
 
 }
 
@@ -146,7 +190,12 @@ set_ascsinifile() {
      sed -i  "/nwUsers.sidAdmUID/ c\nwUsers.sidAdmUID = ${SIDadmUID}" $ASCS_INI_FILE
      sed -i  "/nwUsers.sapsysGID/ c\nwUsers.sapsysGID = ${SAPsysGID}" $ASCS_INI_FILE
 
+     #set the CD location based on $SW_TARGET
+     sed -i  "/SAPINST.CD.PACKAGE.KERNEL/ c\SAPINST.CD.PACKAGE.KERNEL = ${SW_TARGET}/KERN_CD" $ASCS_INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.RDBMS/ c\SAPINST.CD.PACKAGE.RDBMS = ${SW_TARGET}/HDB_CLNTCD" $ASCS_INI_FILE
+
 }
+
 
 set_pasinifile() {
 #set the vname of the database server in the INI file
@@ -170,6 +219,13 @@ set_pasinifile() {
      #set the UID and GID
      sed -i  "/nwUsers.sidAdmUID/ c\nwUsers.sidAdmUID = ${SIDadmUID}" $PAS_INI_FILE
      sed -i  "/nwUsers.sapsysGID/ c\nwUsers.sapsysGID = ${SAPsysGID}" $PAS_INI_FILE
+
+     
+     #set the CD location based on $SW_TARGET
+     sed -i  "/SAPINST.CD.PACKAGE.KERNEL/ c\SAPINST.CD.PACKAGE.KERNEL = ${SW_TARGET}/KERN_CD" $PAS_INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.RDBMS/ c\SAPINST.CD.PACKAGE.RDBMS = ${SW_TARGET}/HDB_CLNTCD" $PAS_INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.LOAD/ c\SAPINST.CD.PACKAGE.LOAD = ${SW_TARGET}/EXP_CD" $PAS_INI_FILE
+
 }
 
 set_cleanup_inifiles() {
@@ -270,10 +326,6 @@ set_ntp() {
 set_filesystems() {
 #create /usr/sap filesystem and mount /sapmnt
 
-    #create and attach EBS volumes for /usr/sap and /sapmnt
-
-    #bash /root/install/create-attach-single-volume.sh "50:gp2:$USR_SAP_DEVICE:$USR_SAP" > /dev/null
-    #bash /root/install/create-attach-single-volume.sh "100:gp2:$SAPMNT_DEVICE:$SAPMNT" > /dev/null
 
     USR_SAP_VOLUME=$(lsblk | grep xvdb) > /dev/null
     SAPMNT_VOLUME=$(lsblk | grep xvdc) > /dev/null
@@ -317,18 +369,94 @@ set_filesystems() {
 
 }
 
+set_EFS() {
+#mount up the EFS filesystem
+
+	mkdir  $SAPMNT > /dev/null
+
+
+    #Check if EFS is in use, if EFS is in use then we mount up from the EFS share
+	if [ "$EFS" == "Yes" ]
+	then
+		#mount up EFS
+        echo "Mounting up EFS from this EFS location: "
+        
+        #construct the EFS DNS name
+        EFS_MP=""$EFS_MT".efs."$REGION".amazonaws.com:/ "
+
+        echo ""$EFS_MP"  "$SAPMNT"  nfs rw,soft,bg,timeo=3,intr 0 0"  >> $FSTAB_FILE
+        
+        #try to mount /sapmnt 3 times 
+        mount /sapmnt > /dev/null
+        sleep 5
+
+       #validate /sapmnt filesystems were created and mounted
+        FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+
+        if [ -z "$FS_SAPMNT" ]
+        then
+
+            mount /sapmnt > /dev/null
+            sleep 15
+        fi
+
+       #validate /sapmnt filesystems were created and mounted
+        FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+
+        if [ -z "$FS_SAPMNT" ]
+        then
+
+            mount /sapmnt > /dev/null
+            sleep 60
+        fi
+
+    fi
+
+    #validate /sapmnt filesystems were created and mounted
+    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+
+    if [ -z "$FS_SAPMNT" ]
+    then
+	    #we did not successfully created the filesystems and mount points	
+	    echo 1
+    else
+	    #we did successfully created the filesystems and mount points
+        #we now share it out, call teh set_nfsexport function
+        echo 0
+    fi
+
+}
+
 set_s3_download() {
 #download the s/w
           
           #download the media from the S3 bucket provided
-          aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" > /dev/null
+          _S3_DL=$(aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" 2>&1 >/dev/null | grep "download failed")
 
-	  cp /root/install/*.params "$SW_TARGET"
+          if [ -n "$S3_DL" ]
+          then
+               #download failed for some reason, try to download again
+               _S3_DL2=$(aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" 2>&1 >/dev/null | grep "download failed")
+        
+              if [ -n "$S3_DL2" ]
+              then
+                   #download failed on 2nd try, exit
+                   echo 1
+                   return
+              fi
+              
+          fi
+
+	      cd "$SRC_INI_DIR" 
+          cp *.params  "$SW_TARGET"
+          
 
           if [ -d "$SAPINST" ]
           then
               chmod -R 755 $SW_TARGET > /dev/null 
-	      cp /root/install/*.params "$SW_TARGET"
+	          cd "$SRC_INI_DIR" 
+              cp *.params  "$SW_TARGET"
+
               echo 0
           else
 	      #retry the download again
@@ -339,7 +467,9 @@ set_s3_download() {
  	      if [ -d "$SAPINST" ]
 	      then
               	   chmod -R 755 $SW_TARGET > /dev/null 
-	           cp /root/install/*.params "$SW_TARGET"
+	               cd "$SRC_INI_DIR" 
+                   cp *.params  "$SW_TARGET"
+
                    echo 0
               else
                    echo 1
@@ -467,20 +597,51 @@ set_update_cli() {
      pip install --upgrade --user awscli
 }
 
-###Main Body###
+set_SUSE_BYOS() {
 
-#First thing to do is check if the /etc/sap-app-quickstart file is present
-#If the file is present then there has already been a successfull QS
-#on this system. We will exit
+#Check to see if BYOS SLES registration is successful
+
+    if [[ "$MyOS" =~ BYOS ]];
+    then
+        SUSEConnect -r "$SLESBYOSRegCode" > /dev/null
+        sleep 5
+        CheckSLESRegistration=$(SUSEConnect -s | grep ACTIVE)
+        if [ -n "$CheckSLESRegistration" ]
+        then
+          SUSEConnect -p sle-module-public-cloud/12/x86_64 > /dev/null
+          echo 0
+        else
+          echo 1
+        fi
+    fi
+}
+
+###Main Body###
 
 if [ -f "/etc/sap-app-quickstart" ]
 then
+        echo "****************************************************************"
 	echo "****************************************************************"
-	echo "****************************************************************"
-	echo "The /etc/sap-app-quickstart file exists, exiting the Quick Start"
-	echo "****************************************************************"
-	echo "****************************************************************"
-	exit 0
+        echo "The /etc/sap-app-quickstart file exists, exiting the Quick Start"
+        echo "****************************************************************"
+        echo "****************************************************************"
+        exit 0
+fi
+
+#Check to see if this is a BYOS system and register it if it is
+if [[ "$MyOS" =~ BYOS ]];
+then
+    _SUSE_BYOS=$(set_SUSE_BYOS)
+
+    if [ "$_SUSE_BYOS" == 0 ]
+    then
+	    echo "Successfully setup BYOS"
+    else
+	    echo "FAILED to setup BYOS...exiting"
+	    #signal the waithandler, 1=Failed
+        /root/install/signalFinalStatus.sh 1 "FAILED to setup BYOS...exiting"
+	    exit 1
+    fi
 fi
 
 #the cli needs to be updated in order to call ssm correctly
@@ -551,8 +712,6 @@ then
      fi
 else 
      echo "FAILED, to install uuidd...exiting..."
-     /root/install/signalFinalStatus.sh 1 "FAILED, to install uuidd...exiting..."
-     exit
 fi
 
 echo
@@ -593,42 +752,64 @@ else
      exit
 fi
 
-echo
-echo "Start set_filesystems @ $(date)"
-echo
-_SET_FS=$(set_filesystems)
-
-if [ "$_SET_FS" == 0 ]
+#We need to determine if we are using EFS or a local /sapmnt
+if [ "$EFS" == "Yes" ]
 then
-     echo "Successfully created $USR_SAP and $SAPMNT"
+    echo
+    echo "Start set_EFS @ $(date)"
+    echo
+    _SET_EFS=$(set_EFS)
+
+    _SAPMNT=$(df -h $SAPMNT | awk '{ print $NF }' | tail -1)
+
+    if [ "$_SAPMNT" == "$SAPMNT"  ]
+    then
+	    echo "Successfully setup /sapmnt"
+    else
+	    echo "Failed to mount $SAPMNT...exiting"
+	    #signal the waithandler, 1=Failed
+       	/root/install/signalFinalStatus.sh 1 "Failed to _SET_EFS for /sapmnt with EFS filesystem: $EFS_MP"
+	    set_cleanup_ascsinifile
+	    exit 1
+    fi
 else
-	if [ "$INSTALL_SAP" == "No" ]
-	then
-     		echo
-		echo "Successfully created $USR_SAP and $SAPMNT"
-	else
-     		echo
-     		echo "FAILED to set /usr/sap and /sapmnt..."
-                /root/install/signalFinalStatus.sh 0 "Success INSTALL_SAP = "$INSTALL_SAP" "
-     		exit 0
+    echo
+    echo "Start set_filesystems @ $(date)"
+    echo
+    _SET_FS=$(set_filesystems)
+
+    if [ "$_SET_FS" == 0 ]
+    then
+        echo "Successfully created $USR_SAP and $SAPMNT"
+        echo
+        echo "Start set_nfsexport @ $(date)"
+        echo
+        _SET_NFS=$(set_nfsexport)
+        SHOWMOUNT=$(showmount -e | wc -l)
+
+        if [ "$_SET_NFS" == 0 -a $SHOWMOUNT -ge 2 ]
+        then
+             echo "Successfully exported NFS file(s)"
+        else
+             echo "FAILED to export NFS file(s)"
+             /root/install/signalFinalStatus.sh 1 "FAILED to export NFS file(s)"
+             echo "FAILED to set NFS export /sapmnt..."
+            /root/install/signalFinalStatus.sh 1 "Failed to NFS_EXPORT /sapmnt"
+            exit 1
+        fi
+    else
+    	 echo
+     	 echo "FAILED to set /usr/sap and /sapmnt..."
+         /root/install/signalFinalStatus.sh 1 "Failed to _SET_FS for /sapmnt"
+         exit 1
 	fi
+    
 fi
 
 echo
 echo "Start set_s3_download @ $(date)"
 echo
 _SET_S3=$(set_s3_download)
-
-#removed below file download sanity check, will rely on set_s3_download to download all the files
-
-#S3_COUNT=$(find "$SW_TARGET" -type f | wc -l)
-#S3_FILE_COUNT="3130"
-
-#if [ "$S3_COUNT" -lt "$S3_FILE_COUNT" ]
-#then
-#     /root/install/signalFinalStatus.sh 1 " FAILED to set /usr/sap and /sapmnt...check your S3 SAP software bucket: "$S3_COUNT" "$S3_FILE_COUNT" " 
-#     exit 1
-#fi
 
 if [ "$_SET_S3" == 0 ]
 then
@@ -661,22 +842,6 @@ else
 fi
 
 
-echo
-echo "Start set_nfsexport @ $(date)"
-echo
-_SET_NFS=$(set_nfsexport)
-SHOWMOUNT=$(showmount -e | wc -l)
-
-if [ "$_SET_NFS" == 0 -a $SHOWMOUNT -ge 2 ]
-then
-     echo "Successfully exported NFS file(s)"
-else
-     echo "FAILED to export NFS file(s)"
-     /root/install/signalFinalStatus.sh 1 "FAILED to export NFS file(s)"
-     exit
-fi
-
-
 set_oss_configs
 
 
@@ -704,8 +869,8 @@ set_ascsinifile
 set_dbinifile
 set_pasinifile
 
-SID=$(grep -i "NW_GetSidNoProfiles.sid" "$SW_TARGET"/ASCS*.params | awk '{ print $NF }' | tr '[A-Z]' '[a-z]')
-SIDADM=$(echo $SID\adm) 
+SID=$(echo "$SAP_SID" |tr '[:upper:]' '[:lower:]')
+SIDADM=$(echo $SID\adm)
 
 #Install the ASCS and DB Instances
 
@@ -713,6 +878,10 @@ umask 006
 
 cd $SAPINST
 sleep 5
+
+#support multilple NW versions
+
+
 echo "Installing the ASCS instance...(1st try)"
 ./sapinst SAPINST_INPUT_PARAMETERS_URL="$ASCS_INI_FILE" SAPINST_EXECUTE_PRODUCT_ID="$ASCS_PRODUCT" SAPINST_USE_HOSTNAME="$SAPPAS_HOSTNAME" SAPINST_SKIP_DIALOGS="true" SAPINST_SLP_MODE="false"
 
@@ -744,7 +913,7 @@ then
   
      DB_DONE=$(su - "$SIDADM" -c "R3trans -d" | grep "R3trans finished (0000)")
 
-     if [ "$DB_DONE" ]
+     if [[ "$DB_DONE" =~ finished ]];
      then
           echo "DB installed"
           #create the ASCS DONE file
@@ -796,7 +965,7 @@ else
      #Check the DB 
      DB_DONE=$(su - $SIDADM -c "R3trans -d" | grep "R3trans finished (0000)")
 
-     if [ "$DB_DONE" ]
+     if [[ "$DB_DONE" =~ finished ]];
      then
           echo "DB installed"
           #create the ASCS DONE file
@@ -902,3 +1071,6 @@ else
 		exit
        fi
 fi
+
+
+

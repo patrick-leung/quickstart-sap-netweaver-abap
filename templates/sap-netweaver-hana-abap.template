@@ -31,6 +31,7 @@
                     },
                     "Parameters": [
                         "MyOSHANA",
+                        "SLESBYOSRegCode",
                         "SAPHANAHostname",
                         "HANAInstanceType",
                         "HANAHostCount",
@@ -52,6 +53,7 @@
                         "default": ""
                     },
                     "Parameters": [
+                        "EFSSapmnt",
                         "HostedZoneName",
                         "SAPPASHostname",
                         "SAPPASHostname",
@@ -61,13 +63,13 @@
                         "SAPInstanceNum",
                         "SIDadmUID",
                         "SAPTZ",
-                        "SAPNetWeaverPass",
                         "SAPInstallMediaBucket",
                         "SAPInstallMediaKeyPrefix",
                         "MyInstanceType",
                         "MyOS",
                         "AutoRecoveryPAS",
-                        "InstallSAP"
+                        "InstallSAP",
+                        "InstallSAPVersion"
                     ]
                 },
                 {
@@ -114,14 +116,20 @@
                 "AASMyInstanceType": {
                     "default": "SAP Additional App Server instance type"
                 },
-                "AutoRecoveryAAS": {
-                    "default": "EC2 Auto Recovery"
+                "ApplicationCIDR": {
+                    "default": "2nd Private Subnet ID"
                 },
                 "AutoRecoveryPAS": {
                     "default": "EC2 Auto Recovery"
                 },
                 "CloudTrailS3Bucket": {
                     "default": "S3 bucket for AWS CloudTrail & AWS Config logs"
+                },
+                "EFSSapmnt": {
+                    "default": "Use EFS for /sapmnt"
+                },
+                "EFSFSName": {
+                    "default": "Existing EFS fs name"
                 },
                 "EnableLogging": {
                     "default": "Enable AWS CloudTrail & AWS Config logs"
@@ -139,7 +147,7 @@
                     "default": "SAP HANA Server "
                 },
                 "HANAMasterPass": {
-                    "default": "SAP HANA password"
+                    "default": "SAP HANA & NetWeaver password"
                 },
                 "HostedZoneName": {
                     "default": "R53 private hosted zone"
@@ -149,6 +157,9 @@
                 },
                 "InstallSAP": {
                     "default": "Install SAP software"
+                },
+                "InstallSAPVersion": {
+                    "default": "SAP NW version"
                 },
                 "InstallSAPAAS": {
                     "default": "Install SAP Additional App Server"
@@ -225,8 +236,8 @@
                 "SAPTZ": {
                     "default": "SAP Server timezone"
                 },
-                "SAPNetWeaverPass": {
-                    "default": "SAP NetWeaver password"
+                "SLESBYOSRegCode": {
+                    "default": "Enter SUSE BYOS Registration Code"
                 },
                 "VolumeTypeHanaData": {
                     "default": "Choose storage volume type for SAP HANA Data"
@@ -287,6 +298,15 @@
             "Default": "",
             "Type": "String"
         },
+        "EFSSapmnt": {
+            "AllowedValues": [
+                "Yes",
+                "No"
+            ],
+            "Default": "No",
+            "Description": "Enable (Yes) or disable (No) EFS for /sapmnt.",
+            "Type": "String"
+        },
         "EnableLogging": {
             "Description": "Enable (Yes) or disable (No) logging with AWS CloudTrail and AWS Config",
             "Default": "No",
@@ -337,7 +357,7 @@
         "HANAMasterPass": {
             "AllowedPattern": "^(?=.*?[a-z])(?=.*?[A-Z])(?=.*[0-9]).*",
             "ConstraintDescription": "This must be at least 8 characters, including uppercase, lowercase, and numeric values.",
-            "Description": "SAP HANA password to use during installation.",
+            "Description": "SAP HANA and NetWeaver password to use during installation.",
             "MinLength": "8",
             "NoEcho": "true",
             "Type": "String"
@@ -367,6 +387,15 @@
             "Default": "Yes",
             "Description": "Install (Yes) or don't install (No) SAP App Server. When set to No, *only* AWS infrastructure is provisioned.",
             "Type": "String"
+        },
+        "InstallSAPVersion": {
+            "Type": "String",
+            "Description": "SAP NW version to install.",
+            "Default": "SAP-NetWeaver-7.4",
+            "AllowedValues": [
+                "SAP-NetWeaver-7.4",
+                "SAP-NetWeaver-7.5"
+            ]
         },
         "InstallSAPAAS": {
             "AllowedValues": [
@@ -405,23 +434,32 @@
                 "SuSE-Linux-11-SP4-HVM",
                 "SuSE-Linux-12-SP1-HVM",
                 "SuSE-Linux-12-SP2-HVM",
+                "SuSE-Linux-12-SP3-HVM",
                 "SuSE-Linux-12-SP1-For-SAP-HVM",
-                "SuSE-Linux-12-SP2-For-SAP-HVM"
+                "SuSE-Linux-12-SP2-For-SAP-HVM",
+                "SuSE-Linux-12-SP3-For-SAP-HVM",
+                "SuSE-Linux-12-SP1-For-SAP-BYOS-HVM",
+                "SuSE-Linux-12-SP2-For-SAP-BYOS-HVM",
+                "SuSE-Linux-12-SP3-For-SAP-BYOS-HVM"
             ],
-            "Default": "SuSE-Linux-12-SP1-HVM",
+            "Default": "SuSE-Linux-12-SP3-HVM",
             "Description": "Operating system (SLES only) version for SAP servers.",
             "Type": "String"
         },
         "MyOSHANA": {
             "Type": "String",
             "Description": "Operating system version for HANA servers.",
-            "Default": "SuSE-Linux-12-SP1-HVM",
+            "Default": "SuSE-Linux-12-SP3-HVM",
             "AllowedValues": [
                 "Red-Hat-Enterprise-Linux-7.3-For-SAP-HVM",
-                "SuSE-Linux-11-SP4-HVM",
                 "SuSE-Linux-12-SP1-HVM",
+                "SuSE-Linux-12-SP3-HVM",
                 "SuSE-Linux-12-SP1-For-SAP-HVM",
-                "SuSE-Linux-12-SP2-For-SAP-HVM"
+                "SuSE-Linux-12-SP2-For-SAP-HVM",
+                "SuSE-Linux-12-SP3-For-SAP-HVM",
+                "SuSE-Linux-12-SP1-For-SAP-BYOS-HVM",
+                "SuSE-Linux-12-SP2-For-SAP-BYOS-HVM",
+                "SuSE-Linux-12-SP3-For-SAP-BYOS-HVM"
             ]
         },
         "PrivateSubnetID": {
@@ -520,13 +558,6 @@
             "Description": "Host name to use for SAP PAS Server (DNS short name).",
             "Type": "String"
         },
-        "SAPNetWeaverPass": {
-            "ConstraintDescription": "required SAP master password.",
-            "Description": "**Your SAP NW password**. **For now this is the same password as your SAP HANA password**",
-            "MinLength": "1",
-            "NoEcho": "true",
-            "Type": "String"
-        },
         "SAPTZ": {
             "AllowedValues": [
                 "PT",
@@ -555,6 +586,11 @@
             "Default": "1001",
             "Description": "UID (default is 1001) for the SIDadm user.",
             "Type": "String"
+        },
+        "SLESBYOSRegCode": {
+            "Type": "String",
+            "Default": "",
+            "Description": "Registration code for SUSE BYOS (Applicable only if you use BYOS Option)."
         },
         "VolumeTypeHanaData": {
             "Type": "String",
@@ -588,6 +624,22 @@
                 "Yes"
             ]
         },
+        "UseEFS": {
+            "Fn::Equals": [
+                {
+                    "Ref": "EFSSapmnt"
+                },
+                "Yes"
+            ]
+        },
+        "NoUseEFS": {
+            "Fn::Equals": [
+                {
+                    "Ref": "EFSSapmnt"
+                },
+                "No"
+            ]
+        },
         "InstallRDP": {
             "Fn::Equals": [
                 {
@@ -616,11 +668,20 @@
             "SuSE-Linux-12-SP1-HVM": {
                 "Code": "SuSELinux12SP1"
             },
+            "SuSE-Linux-12-SP2-HVM": {
+                "Code": "SuSELinux12SP2"
+            },
+            "SuSE-Linux-12-SP3-HVM": {
+                "Code": "SuSELinux12SP3"
+            },
             "SuSE-Linux-12-SP1-For-SAP-HVM": {
                 "Code": "SuSELinux12SP1ForSAP"
             },
             "SuSE-Linux-12-SP2-For-SAP-HVM": {
                 "Code": "SuSELinux12SP2ForSAP"
+            },
+            "SuSE-Linux-12-SP3-For-SAP-HVM": {
+                "Code": "SuSELinux12SP3ForSAP"
             },
             "SuSE-Linux-12-SP1-For-SAP-BYOS-HVM": {
                 "Code": "SuSELinux12SP1ForSAP-BYOS"
@@ -648,11 +709,17 @@
             "SuSE-Linux-12-SP2-HVM": {
                 "Code": "SLES12SP2HVM"
             },
+            "SuSE-Linux-12-SP3-HVM": {
+                "Code": "SLES12SP3HVM"
+            },
             "SuSE-Linux-12-SP1-For-SAP-HVM": {
                 "Code": "SLES12SP1SAPHVM"
             },
             "SuSE-Linux-12-SP2-For-SAP-HVM": {
                 "Code": "SLES12SP2SAPHVM"
+            },
+            "SuSE-Linux-12-SP3-For-SAP-HVM": {
+                "Code": "SLES12SP3SAPHVM"
             },
             "SuSE-Linux-12-SP1-For-SAP-BYOS-HVM": {
                 "Code": "SLES12SP1SAPBYOSHVM"
@@ -667,214 +734,231 @@
         "AWSAMIRegionMap": {
             "AMI": {
                 "RHEL73SAPHVM": "SAP-7.3_HVM-20180116-x86_64-1-Hourly2-GP2-b676039c-a4f8-4be7-9866-c804b1ade684-ami-d4ffddae.4",
-                "SLES11SP4HVM": "suse-sles-11-sp4-v20180524-hvm-ssd-x86_64",
+                "SLES11SP4HVM": "suse-sles-11-sp4-v20180104-hvm-ssd-x86_64",
                 "SLES12SP1HVM": "suse-sles-12-sp1-v20161021-hvm-ssd-x86_64",
                 "SLES12SP2HVM": "suse-sles-12-sp2-v20170620-hvm-ssd-x86_64",
+                "SLES12SP3HVM": "suse-sles-12-sp3-v20180215-hvm-ssd-x86_64",
                 "SLES12SP1SAPHVM": "suse-sles-sap-12-sp1-v20171121-hvm-ssd-x86_64-f0188081-b780-4ee4-aef6-cbcb063fd11e-ami-8bac24f1.4",
                 "SLES12SP2SAPHVM": "suse-sles-sap-12-sp2-v20180215-hvm-ssd-x86_64-e3458d64-5c36-4577-bd98-0ee19e3eaeec-ami-4cd6c836.4",
                 "SLES12SP3SAPHVM": "suse-sles-sap-12-sp3-v20180215-hvm-ssd-x86_64-da7aa9c3-97db-4573-89a6-7fe7348d90b0-ami-92d5cbe8.4",
                 "SLES12SP1SAPBYOSHVM": "suse-sles-sap-12-sp1-byos-v20170123-hvm-ssd-x86_64",
-                "SLES12SP2SAPBYOSHVM": "suse-sles-sap-12-sp2-byos-v20180524-hvm-ssd-x86_64",
-                "SLES12SP3SAPBYOSHVM": "suse-sles-sap-12-sp3-byos-v20180523-hvm-ssd-x86_64",
-                "WS2012R2": "Windows_Server-2012-R2_RTM-English-64Bit-Base-2018.05.09"
+                "SLES12SP2SAPBYOSHVM": "suse-sles-sap-12-sp2-byos-v20180215-hvm-ssd-x86_64",
+                "SLES12SP3SAPBYOSHVM": "suse-sles-sap-12-sp3-byos-v20180215-hvm-ssd-x86_64",
+                "WS2012R2": "Windows_Server-2012-R2_RTM-English-64Bit-Base-2018.04.11"
             },
             "ap-northeast-1": {
                 "RHEL73SAPHVM": "ami-e5036283",
-                "SLES11SP4HVM": "ami-ebb64994",
+                "SLES11SP4HVM": "ami-f7960a91",
                 "SLES12SP1HVM": "ami-d94fe9b8",
                 "SLES12SP1SAPBYOSHVM": "ami-63473c04",
                 "SLES12SP1SAPHVM": "ami-a6da67c0",
                 "SLES12SP2HVM": "ami-a07560c7",
-                "SLES12SP2SAPBYOSHVM": "ami-0101fd7e",
+                "SLES12SP2SAPBYOSHVM": "ami-47cab621",
                 "SLES12SP2SAPHVM": "ami-8cb5caea",
-                "SLES12SP3SAPBYOSHVM": "ami-7700fc08",
+                "SLES12SP3HVM": "ami-8a4a36ec",
+                "SLES12SP3SAPBYOSHVM": "ami-7dd1ad1b",
                 "SLES12SP3SAPHVM": "ami-44b5ca22",
-                "WS2012R2": "ami-9be803e4"
+                "WS2012R2": "ami-84dccef8"
             },
             "ap-northeast-2": {
                 "RHEL73SAPHVM": "ami-e0e5468e",
-                "SLES11SP4HVM": "ami-3815bd56",
+                "SLES11SP4HVM": "ami-afc565c1",
                 "SLES12SP1HVM": "ami-1ced3972",
                 "SLES12SP1SAPBYOSHVM": "ami-b5f928db",
                 "SLES12SP1SAPHVM": "ami-5f993e31",
                 "SLES12SP2HVM": "ami-86d00fe8",
-                "SLES12SP2SAPBYOSHVM": "ami-0d11b963",
+                "SLES12SP2SAPBYOSHVM": "ami-9e2d8ff0",
                 "SLES12SP2SAPHVM": "ami-003f9d6e",
-                "SLES12SP3SAPBYOSHVM": "ami-6f11b901",
+                "SLES12SP3HVM": "ami-e22b898c",
+                "SLES12SP3SAPBYOSHVM": "ami-1433917a",
                 "SLES12SP3SAPHVM": "ami-6202a00c",
-                "WS2012R2": "ami-4a1eb724"
+                "WS2012R2": "ami-67da7409"
             },
             "ap-south-1": {
                 "RHEL73SAPHVM": "ami-f383d59c",
-                "SLES11SP4HVM": "ami-508ba73f",
+                "SLES11SP4HVM": "ami-d22b7fbd",
                 "SLES12SP1HVM": "ami-985226f7",
                 "SLES12SP1SAPBYOSHVM": "ami-93c9bffc",
                 "SLES12SP1SAPHVM": "ami-b3e6a9dc",
                 "SLES12SP2HVM": "ami-62e39c0d",
-                "SLES12SP2SAPBYOSHVM": "ami-dfb19db0",
+                "SLES12SP2SAPBYOSHVM": "ami-3c491453",
                 "SLES12SP2SAPHVM": "ami-48613c27",
-                "SLES12SP3SAPBYOSHVM": "ami-41b19d2e",
+                "SLES12SP3HVM": "ami-455b062a",
+                "SLES12SP3SAPBYOSHVM": "ami-56451839",
                 "SLES12SP3SAPHVM": "ami-76643919",
-                "WS2012R2": "ami-2289aa4d"
+                "WS2012R2": "ami-47b69228"
             },
             "ap-southeast-1": {
                 "RHEL73SAPHVM": "ami-92ef90ee",
-                "SLES11SP4HVM": "ami-36d3ee4a",
+                "SLES11SP4HVM": "ami-2644325a",
                 "SLES12SP1HVM": "ami-163d9b75",
                 "SLES12SP1SAPBYOSHVM": "ami-ab0aa0c8",
                 "SLES12SP1SAPHVM": "ami-65a7f006",
                 "SLES12SP2HVM": "ami-f1078a92",
-                "SLES12SP2SAPBYOSHVM": "ami-ace7dad0",
+                "SLES12SP2SAPBYOSHVM": "ami-6691dc1a",
                 "SLES12SP2SAPHVM": "ami-7e0c4002",
-                "SLES12SP3SAPBYOSHVM": "ami-5defd221",
+                "SLES12SP3HVM": "ami-25602d59",
+                "SLES12SP3SAPBYOSHVM": "ami-e99ad795",
                 "SLES12SP3SAPHVM": "ami-01f3be7d",
-                "WS2012R2": "ami-14a89d68"
+                "WS2012R2": "ami-49a78135"
             },
             "ap-southeast-2": {
                 "RHEL73SAPHVM": "ami-f6d62994",
-                "SLES11SP4HVM": "ami-47b76425",
+                "SLES11SP4HVM": "ami-05d62467",
                 "SLES12SP1HVM": "ami-e32b1680",
                 "SLES12SP1SAPBYOSHVM": "ami-460d0a25",
                 "SLES12SP1SAPHVM": "ami-9abe54f8",
                 "SLES12SP2HVM": "ami-197a6a7a",
-                "SLES12SP2SAPBYOSHVM": "ami-03815261",
+                "SLES12SP2SAPBYOSHVM": "ami-272aef45",
                 "SLES12SP2SAPHVM": "ami-d56faab7",
-                "SLES12SP3SAPBYOSHVM": "ami-4d2afa2f",
+                "SLES12SP3HVM": "ami-801adfe2",
+                "SLES12SP3SAPBYOSHVM": "ami-572aef35",
                 "SLES12SP3SAPHVM": "ami-4d6eab2f",
-                "WS2012R2": "ami-c971a6ab"
+                "WS2012R2": "ami-a762abc5"
             },
             "ca-central-1": {
                 "RHEL73SAPHVM": "ami-2a63e64e",
-                "SLES11SP4HVM": "ami-b437b7d0",
+                "SLES11SP4HVM": "ami-0bd85d6f",
                 "SLES12SP1SAPBYOSHVM": "ami-2fd4694b",
                 "SLES12SP1SAPHVM": "ami-368a3152",
                 "SLES12SP2HVM": "ami-d5d56ab1",
-                "SLES12SP2SAPBYOSHVM": "ami-4938b82d",
+                "SLES12SP2SAPBYOSHVM": "ami-b21490d6",
                 "SLES12SP2SAPHVM": "ami-76199d12",
-                "SLES12SP3SAPBYOSHVM": "ami-8537b7e1",
+                "SLES12SP3HVM": "ami-25088c41",
+                "SLES12SP3SAPBYOSHVM": "ami-40088c24",
                 "SLES12SP3SAPHVM": "ami-f7139793",
-                "WS2012R2": "ami-4a97172e"
+                "WS2012R2": "ami-f234b296"
             },
             "eu-central-1": {
                 "RHEL73SAPHVM": "ami-d866f9b7",
-                "SLES11SP4HVM": "ami-7d391296",
+                "SLES11SP4HVM": "ami-2b3cac44",
                 "SLES12SP1HVM": "ami-59699036",
                 "SLES12SP1SAPBYOSHVM": "ami-4b6ba424",
                 "SLES12SP1SAPHVM": "ami-7efc7e11",
                 "SLES12SP2HVM": "ami-984ee9f7",
-                "SLES12SP2SAPBYOSHVM": "ami-2f2d06c4",
+                "SLES12SP2SAPBYOSHVM": "ami-12b8d97d",
                 "SLES12SP2SAPHVM": "ami-adc8a9c2",
-                "SLES12SP3SAPBYOSHVM": "ami-fe2a0115",
+                "SLES12SP3HVM": "ami-785f3e17",
+                "SLES12SP3SAPBYOSHVM": "ami-5bb9d834",
                 "SLES12SP3SAPHVM": "ami-9cc6a7f3",
-                "WS2012R2": "ami-3c0f22d7"
+                "WS2012R2": "ami-ab520a40"
             },
             "eu-west-1": {
                 "RHEL73SAPHVM": "ami-e365fd9a",
-                "SLES11SP4HVM": "ami-5085bb29",
+                "SLES11SP4HVM": "ami-974cdbee",
                 "SLES12SP1HVM": "ami-b197d9c2",
                 "SLES12SP1SAPBYOSHVM": "ami-81025de7",
                 "SLES12SP1SAPHVM": "ami-03ef587a",
                 "SLES12SP2HVM": "ami-f5776f93",
-                "SLES12SP2SAPBYOSHVM": "ami-079da37e",
+                "SLES12SP2SAPBYOSHVM": "ami-17f0836e",
                 "SLES12SP2SAPHVM": "ami-3dbac844",
-                "SLES12SP3SAPBYOSHVM": "ami-89a59bf0",
+                "SLES12SP3HVM": "ami-9c4a39e5",
+                "SLES12SP3SAPBYOSHVM": "ami-978efdee",
                 "SLES12SP3SAPHVM": "ami-53b9cb2a",
-                "WS2012R2": "ami-4390a43a"
+                "WS2012R2": "ami-768dd70f"
             },
             "eu-west-2": {
                 "RHEL73SAPHVM": "ami-03fee567",
-                "SLES11SP4HVM": "ami-02ec0065",
+                "SLES11SP4HVM": "ami-3dc2da59",
                 "SLES12SP1SAPBYOSHVM": "ami-b2a1abd6",
                 "SLES12SP1SAPHVM": "ami-ebc3dc8f",
                 "SLES12SP2HVM": "ami-d97066bd",
-                "SLES12SP2SAPBYOSHVM": "ami-c1806ca6",
+                "SLES12SP2SAPBYOSHVM": "ami-1f6b8e78",
                 "SLES12SP2SAPHVM": "ami-4545a022",
-                "SLES12SP3SAPBYOSHVM": "ami-ab9874cc",
+                "SLES12SP3HVM": "ami-ee6c8989",
+                "SLES12SP3SAPBYOSHVM": "ami-c46b8ea3",
                 "SLES12SP3SAPHVM": "ami-bc7b9edb",
-                "WS2012R2": "ami-e940a28e"
+                "WS2012R2": "ami-25d13142"
             },
             "eu-west-3": {
                 "RHEL73SAPHVM": "ami-7ae85e07",
-                "SLES11SP4HVM": "ami-d953e2a4",
+                "SLES11SP4HVM": "ami-2e1aad53",
                 "SLES12SP1SAPBYOSHVM": "ami-cf992eb2",
                 "SLES12SP1SAPHVM": "ami-41893e3c",
-                "SLES12SP2SAPBYOSHVM": "ami-cc68d9b1",
+                "SLES12SP2SAPBYOSHVM": "ami-1286306f",
                 "SLES12SP2SAPHVM": "ami-aa8533d7",
-                "SLES12SP3SAPBYOSHVM": "ami-cb68d9b6",
+                "SLES12SP3HVM": "ami-d29b2daf",
+                "SLES12SP3SAPBYOSHVM": "ami-7387310e",
                 "SLES12SP3SAPHVM": "ami-2284325f",
-                "WS2012R2": "ami-0c803171"
+                "WS2012R2": "ami-bbfb4ac6"
             },
             "sa-east-1": {
                 "RHEL73SAPHVM": "ami-0b8ac767",
-                "SLES11SP4HVM": "ami-10326c7c",
+                "SLES11SP4HVM": "ami-59a8eb35",
                 "SLES12SP1HVM": "ami-ce3aa7a2",
                 "SLES12SP1SAPBYOSHVM": "ami-eb543187",
                 "SLES12SP1SAPHVM": "ami-798cc915",
                 "SLES12SP2HVM": "ami-52a4cf3e",
-                "SLES12SP2SAPBYOSHVM": "ami-6239670e",
+                "SLES12SP2SAPBYOSHVM": "ami-d76920bb",
                 "SLES12SP2SAPHVM": "ami-2bcca747",
-                "SLES12SP3SAPBYOSHVM": "ami-38005e54",
+                "SLES12SP3HVM": "ami-8a5e17e6",
+                "SLES12SP3SAPBYOSHVM": "ami-46561f2a",
                 "SLES12SP3SAPHVM": "ami-4e017322",
-                "WS2012R2": "ami-b9df82d5"
+                "WS2012R2": "ami-2162334d"
             },
             "us-east-1": {
                 "RHEL73SAPHVM": "ami-39f0de43",
-                "SLES11SP4HVM": "ami-d78ceba8",
+                "SLES11SP4HVM": "ami-3881d042",
                 "SLES12SP1HVM": "ami-1eeab909",
                 "SLES12SP1SAPBYOSHVM": "ami-7dd2256b",
                 "SLES12SP1SAPHVM": "ami-f20f8788",
                 "SLES12SP2HVM": "ami-8fac8399",
-                "SLES12SP2SAPBYOSHVM": "ami-ce4720b1",
+                "SLES12SP2SAPBYOSHVM": "ami-601e001a",
                 "SLES12SP2SAPHVM": "ami-678a931d",
-                "SLES12SP3SAPBYOSHVM": "ami-316d094e",
+                "SLES12SP3HVM": "ami-62bda218",
+                "SLES12SP3SAPBYOSHVM": "ami-3d716f47",
                 "SLES12SP3SAPHVM": "ami-388f9642",
-                "WS2012R2": "ami-2a9a1655"
+                "WS2012R2": "ami-bf934bc0"
             },
             "us-east-2": {
                 "RHEL73SAPHVM": "ami-bbe4cede",
-                "SLES11SP4HVM": "ami-18cff37d",
+                "SLES11SP4HVM": "ami-22e2c947",
                 "SLES12SP1HVM": "ami-85075de0",
                 "SLES12SP1SAPBYOSHVM": "ami-ac2401c9",
                 "SLES12SP1SAPHVM": "ami-3df7d958",
                 "SLES12SP2HVM": "ami-f990b69c",
-                "SLES12SP2SAPBYOSHVM": "ami-2fd2ee4a",
+                "SLES12SP2SAPBYOSHVM": "ami-cfdeeaaa",
                 "SLES12SP2SAPHVM": "ami-f9c9fd9c",
-                "SLES12SP3SAPBYOSHVM": "ami-21d1ed44",
+                "SLES12SP3HVM": "ami-57d3e732",
+                "SLES12SP3SAPBYOSHVM": "ami-edd8ec88",
                 "SLES12SP3SAPHVM": "ami-7fc9fd1a",
-                "WS2012R2": "ami-ee112c8b"
+                "WS2012R2": "ami-0a84b46f"
             },
             "us-west-1": {
                 "RHEL73SAPHVM": "ami-0be4e66b",
-                "SLES11SP4HVM": "ami-d17f64b1",
+                "SLES11SP4HVM": "ami-034f4f63",
                 "SLES12SP1HVM": "ami-a12962c1",
                 "SLES12SP1SAPBYOSHVM": "ami-4a9dcf2a",
                 "SLES12SP1SAPHVM": "ami-5ce8d03c",
                 "SLES12SP2HVM": "ami-32c8e552",
-                "SLES12SP2SAPBYOSHVM": "ami-957f64f5",
+                "SLES12SP2SAPBYOSHVM": "ami-d7d3dab7",
                 "SLES12SP2SAPHVM": "ami-ecf6ff8c",
-                "SLES12SP3SAPBYOSHVM": "ami-01796261",
+                "SLES12SP3HVM": "ami-bbc5ccdb",
+                "SLES12SP3SAPBYOSHVM": "ami-02d0d962",
                 "SLES12SP3SAPHVM": "ami-1af4fd7a",
-                "WS2012R2": "ami-63253b03"
+                "WS2012R2": "ami-d0d0c3b0"
             },
             "us-west-2": {
                 "RHEL73SAPHVM": "ami-edfa4895",
-                "SLES11SP4HVM": "ami-cd6118b5",
+                "SLES11SP4HVM": "ami-7eb31906",
                 "SLES12SP1HVM": "ami-7fa2061f",
                 "SLES12SP1SAPBYOSHVM": "ami-68922c08",
                 "SLES12SP1SAPHVM": "ami-94fb26ec",
                 "SLES12SP2HVM": "ami-da786da3",
-                "SLES12SP2SAPBYOSHVM": "ami-777a030f",
+                "SLES12SP2SAPBYOSHVM": "ami-0d38bb75",
                 "SLES12SP2SAPHVM": "ami-b7bd3fcf",
-                "SLES12SP3SAPBYOSHVM": "ami-2c057c54",
+                "SLES12SP3HVM": "ami-811794f9",
+                "SLES12SP3SAPBYOSHVM": "ami-8432b1fc",
                 "SLES12SP3SAPHVM": "ami-84be3cfc",
-                "WS2012R2": "ami-bbd6a7c3"
+                "WS2012R2": "ami-10375468"
             }
         }
     },
     "Resources": {
         "AutoRecoverAlarmMaster": {
             "Type": "AWS::CloudWatch::Alarm",
-            "Condition": "AutoRecoveryMaster",
+            "DependsOn": "SAPPASInstance",
+            "Condition": "UseEFS",
             "Properties": {
                 "AlarmDescription": "Trigger a recovery when instance status check fails for 2 consecutive minutes.",
                 "Namespace": "AWS/EC2",
@@ -904,6 +988,92 @@
                         "Value": {
                             "Ref": "SAPPASInstance"
                         }
+                    }
+                ]
+            }
+        },
+        "AutoRecoverAlarmMasterNoEFS": {
+            "Type": "AWS::CloudWatch::Alarm",
+            "DependsOn": "SAPPASInstanceNoEFS",
+            "Condition": "NoUseEFS",
+            "Properties": {
+                "AlarmDescription": "Trigger a recovery when instance status check fails for 2 consecutive minutes.",
+                "Namespace": "AWS/EC2",
+                "MetricName": "StatusCheckFailed_System",
+                "Statistic": "Minimum",
+                "Period": "60",
+                "EvaluationPeriods": "2",
+                "ComparisonOperator": "GreaterThanThreshold",
+                "Threshold": "0",
+                "AlarmActions": [
+                    {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "arn:aws:automate:",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                ":ec2:recover"
+                            ]
+                        ]
+                    }
+                ],
+                "Dimensions": [
+                    {
+                        "Name": "InstanceId",
+                        "Value": {
+                            "Ref": "SAPPASInstanceNoEFS"
+                        }
+                    }
+                ]
+            }
+        },
+        "EFSFileSystem": {
+            "Type": "AWS::EFS::FileSystem",
+            "Condition": "UseEFS",
+            "Properties": {
+                "PerformanceMode": "generalPurpose",
+                "FileSystemTags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "SAPPASHostname"
+                        }
+                    }
+                ]
+            }
+        },
+        "EFSMountTarget1": {
+            "Type": "AWS::EFS::MountTarget",
+            "Condition": "UseEFS",
+            "Properties": {
+                "FileSystemId": {
+                    "Ref": "EFSFileSystem"
+                },
+                "SubnetId": {
+                    "Ref": "PrivateSubnetID"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "SAPPASSecurityGroup"
+                    }
+                ]
+            }
+        },
+        "EFSMountTarget2": {
+            "Type": "AWS::EFS::MountTarget",
+            "Condition": "UseEFS",
+            "Properties": {
+                "FileSystemId": {
+                    "Ref": "EFSFileSystem"
+                },
+                "SubnetId": {
+                    "Ref": "ApplicationCIDR"
+                },
+                "SecurityGroups": [
+                    {
+                        "Ref": "SAPPASSecurityGroup"
                     }
                 ]
             }
@@ -969,11 +1139,17 @@
                     "RDPInstanceType": {
                         "Ref": "RDPInstanceType"
                     },
+                    "SAPTZ": {
+                        "Ref": "SAPTZ"
+                    },
                     "SAPInstanceNum": {
                         "Ref": "SAPInstanceNum"
                     },
                     "SID": {
                         "Ref": "SID"
+                    },
+                    "SLESBYOSRegCode": {
+                        "Ref": "SLESBYOSRegCode"
                     },
                     "VolumeTypeHanaData": {
                         "Ref": "VolumeTypeHanaData"
@@ -1022,7 +1198,7 @@
                 "Description": "Encrypted parameter store for master SAP password",
                 "Type": "String",
                 "Value": {
-                    "Ref": "SAPNetWeaverPass"
+                    "Ref": "HANAMasterPass"
                 }
             }
         },
@@ -1548,7 +1724,7 @@
         },
         "SAPPASR53Record": {
             "Type": "AWS::Route53::RecordSet",
-            "DependsOn": "SAPPASInstance",
+            "DependsOn": "SAPPASInterface",
             "Properties": {
                 "HostedZoneId": {
                     "Ref": "HostedZone"
@@ -1561,8 +1737,8 @@
                 "ResourceRecords": [
                     {
                         "Fn::GetAtt": [
-                            "SAPPASInstance",
-                            "PrivateIp"
+                            "SAPPASInterface",
+                            "PrimaryPrivateIpAddress"
                         ]
                     }
                 ]
@@ -1570,19 +1746,19 @@
         },
         "WaitForSAPInstall": {
             "Type": "AWS::CloudFormation::WaitCondition",
-            "DependsOn": "SAPPASInstance",
             "Properties": {
                 "Handle": {
-                    "Ref": "WaitForPASInstallWaitHandle"
+                    "Ref": "WaitForSAPInstallWaitHandle"
                 },
                 "Timeout": "14400"
             }
         },
-        "WaitForPASInstallWaitHandle": {
+        "WaitForSAPInstallWaitHandle": {
             "Type": "AWS::CloudFormation::WaitConditionHandle",
             "Properties": {}
         },
         "SAPPASInstance": {
+            "Condition": "UseEFS",
             "DependsOn": "HANAStack",
             "Type": "AWS::EC2::Instance",
             "Metadata": {
@@ -1607,6 +1783,16 @@
                                     "Fn::Join": [
                                         "",
                                         [
+                                            "export EFS=",
+                                            {
+                                                "Ref": "EFSSapmnt"
+                                            },
+                                            "\n",
+                                            "export EFS_MT=",
+                                            {
+                                                "Ref": "EFSFileSystem"
+                                            },
+                                            "\n",
                                             "export HOSTED_ZONE=",
                                             {
                                                 "Ref": "HostedZoneName"
@@ -1615,6 +1801,11 @@
                                             "export INSTALL_SAP=",
                                             {
                                                 "Ref": "InstallSAP"
+                                            },
+                                            "\n",
+                                            "export INSTALL_SAP_VERSION=",
+                                            {
+                                                "Ref": "InstallSAPVersion"
                                             },
                                             "\n",
                                             "export S3_BUCKET=",
@@ -1670,15 +1861,20 @@
                                                 "Ref": "MyOS"
                                             },
                                             "\n",
+                                            "export SLESBYOSRegCode=",
+                                            {
+                                                "Ref": "SLESBYOSRegCode"
+                                            },
+                                            "\n",
                                             "export SAPInstanceNum=",
                                             {
                                                 "Ref": "SAPInstanceNum"
                                             },
                                             "\n",
-                                            "export WaitForPASInstallWaitHandle=",
+                                            "export WaitForSAPInstallWaitHandle=",
                                             "\"",
                                             {
-                                                "Ref": "WaitForPASInstallWaitHandle"
+                                                "Ref": "WaitForSAPInstallWaitHandle"
                                             },
                                             "\"",
                                             "\n",
@@ -1729,6 +1925,393 @@
                             "/root/install/PASX_D00_Linux_HDB.params": {
                                 "source": {
                                     "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/PASX_D00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/NW75/ASCS_00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/NW75/ASCS_00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/NW75/DB_00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/NW75/DB_00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/NW75/PASX_D00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/NW75/PASX_D00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/download-sapapp.sh": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/download-sapapp.sh"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/signalFinalStatus.sh": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/signalFinalStatus.sh"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/sap-app-pas-install-single-hosts.sh": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/sap-app-pas-install-single-hosts.sh"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            }
+                        },
+                        "commands": {
+                            "startinstall": {
+                                "command": "bash -xv /root/install/download-sapapp.sh"
+                            }
+                        }
+                    }
+                }
+            },
+            "Properties": {
+                "BlockDeviceMappings": [
+                    {
+                        "DeviceName": "/dev/sda1",
+                        "Ebs": {
+                            "DeleteOnTermination": "True",
+                            "VolumeSize": "50",
+                            "VolumeType": "gp2"
+                        }
+                    },
+                    {
+                        "DeviceName": "/dev/xvdb",
+                        "Ebs": {
+                            "DeleteOnTermination": "True",
+                            "VolumeSize": "50",
+                            "VolumeType": "gp2"
+                        }
+                    },
+                    {
+                        "DeviceName": "/dev/xvdc",
+                        "Ebs": {
+                            "DeleteOnTermination": "True",
+                            "VolumeSize": "50",
+                            "VolumeType": "gp2"
+                        }
+                    }
+                ],
+                "IamInstanceProfile": {
+                    "Ref": "SAPIAMProfile"
+                },
+                "ImageId": {
+                    "Fn::FindInMap": [
+                        "AWSAMIRegionMap",
+                        {
+                            "Ref": "AWS::Region"
+                        },
+                        {
+                            "Fn::FindInMap": [
+                                "SAPAMINameMap",
+                                {
+                                    "Ref": "MyOS"
+                                },
+                                "Code"
+                            ]
+                        }
+                    ]
+                },
+                "InstanceType": {
+                    "Ref": "MyInstanceType"
+                },
+                "KeyName": {
+                    "Ref": "KeyName"
+                },
+                "NetworkInterfaces": [
+                    {
+                        "NetworkInterfaceId": {
+                            "Ref": "SAPPASInterface"
+                        },
+                        "DeviceIndex": "0"
+                    }
+                ],
+                "Tags": [
+                    {
+                        "Key": "Name",
+                        "Value": {
+                            "Ref": "SAPPASHostname"
+                        }
+                    }
+                ],
+                "UserData": {
+                    "Fn::Base64": {
+                        "Fn::Join": [
+                            "",
+                            [
+                                "#!/bin/bash\n",
+                                "export PATH=$PATH:/usr/local/bin\n",
+                                "mkdir -p /root/install\n",
+                                "hostname ",
+                                {
+                                    "Ref": "SAPPASHostname"
+                                },
+                                "\n",
+                                "echo ",
+                                {
+                                    "Fn::Join": [
+                                        ".",
+                                        [
+                                            {
+                                                "Ref": "SAPPASHostname"
+                                            }
+                                        ]
+                                    ]
+                                },
+                                " > /etc/HOSTNAME\n",
+                                "       cd /tmp\n",
+                                "       wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz\n",
+                                "       gzip -df aws-cfn-bootstrap-latest.tar.gz\n",
+                                "       tar -xvf aws-cfn-bootstrap-latest.tar\n",
+                                "       #ln -s /tmp/aws-cfn-bootstrap-1.4 /opt/aws\n",
+                                "       chmod -R 755 /tmp/aws-cfn-bootstrap-1.4\n",
+                                "       which pip &> /dev/null\n",
+                                "       if [ $? -ne 0 ] ;then\n",
+                                "           echo \"PIP NOT INSTALLED\"\n",
+                                "           [ `which yum` ] && $(yum install -y epel-release; yum install -y python-pip) && echo \"PIP INSTALLED\"\n",
+                                "           [ `which apt-get` ] && apt-get -y update && apt-get -y install python-pip && echo \"PIP INSTALLED\"\n",
+                                "           [ `which zypper` ] && zypper -n install python-pip && echo \"PIP INSTALLED\"\n",
+                                "       fi\n",
+                                "       pip install --upgrade pip\n",
+                                "       pip install --upgrade setuptools\n",
+                                "       pip install awscli --ignore-installed six &> /dev/null\n",
+                                "       export PYTHONPATH=/tmp/aws-cfn-bootstrap-1.4:$PYTHONPATH\n",
+                                "       /tmp/aws-cfn-bootstrap-1.4/bin/cfn-init -v ",
+                                "         --stack ",
+                                {
+                                    "Ref": "AWS::StackName"
+                                },
+                                "         --resource SAPPASInstance ",
+                                "         --region ",
+                                {
+                                    "Ref": "AWS::Region"
+                                },
+                                "\n"
+                            ]
+                        ]
+                    }
+                }
+            }
+        },
+        "SAPPASInstanceNoEFS": {
+            "Condition": "NoUseEFS",
+            "DependsOn": "HANAStack",
+            "Type": "AWS::EC2::Instance",
+            "Metadata": {
+                "AWS::CloudFormation::Authentication": {
+                    "S3AccessCreds": {
+                        "type": "S3",
+                        "roleName": {
+                            "Ref": "SAPPASIAMRole"
+                        },
+                        "buckets": [
+                            {
+                                "Ref": "QSS3BucketName"
+                            }
+                        ]
+                    }
+                },
+                "AWS::CloudFormation::Init": {
+                    "config": {
+                        "files": {
+                            "/root/install/config.sh": {
+                                "content": {
+                                    "Fn::Join": [
+                                        "",
+                                        [
+                                            "export EFS=",
+                                            {
+                                                "Ref": "EFSSapmnt"
+                                            },
+                                            "\n",
+                                            "export HOSTED_ZONE=",
+                                            {
+                                                "Ref": "HostedZoneName"
+                                            },
+                                            "\n",
+                                            "export INSTALL_SAP=",
+                                            {
+                                                "Ref": "InstallSAP"
+                                            },
+                                            "\n",
+                                            "export INSTALL_SAP_VERSION=",
+                                            {
+                                                "Ref": "InstallSAPVersion"
+                                            },
+                                            "\n",
+                                            "export S3_BUCKET=",
+                                            {
+                                                "Ref": "SAPInstallMediaBucket"
+                                            },
+                                            "\n",
+                                            "export S3_BUCKET_KP=",
+                                            {
+                                                "Ref": "SAPInstallMediaKeyPrefix"
+                                            },
+                                            "\n",
+                                            "export SAP_SCHEMA_NAME=",
+                                            {
+                                                "Ref": "SAPSchemaName"
+                                            },
+                                            "\n",
+                                            "export SAP_SID=",
+                                            {
+                                                "Ref": "SID"
+                                            },
+                                            "\n",
+                                            "export SSM_PARAM_STORE=",
+                                            {
+                                                "Ref": "SAPNetWeaverPassSSMParam"
+                                            },
+                                            "\n",
+                                            "export TZ_INPUT_PARAM=",
+                                            {
+                                                "Ref": "SAPTZ"
+                                            },
+                                            "\n",
+                                            "export DBHOSTNAME=",
+                                            {
+                                                "Ref": "SAPHANAHostname"
+                                            },
+                                            "\n",
+                                            "export SAPPAS_HOSTNAME=",
+                                            {
+                                                "Ref": "SAPPASHostname"
+                                            },
+                                            "\n",
+                                            "export DBIP=",
+                                            {
+                                                "Fn::GetAtt": [
+                                                    "HANAStack",
+                                                    "Outputs.HANAMasterInstanceIP"
+                                                ]
+                                            },
+                                            "\n",
+                                            "export MyOS=",
+                                            {
+                                                "Ref": "MyOS"
+                                            },
+                                            "\n",
+                                            "export SLESBYOSRegCode=",
+                                            {
+                                                "Ref": "SLESBYOSRegCode"
+                                            },
+                                            "\n",
+                                            "export SAPInstanceNum=",
+                                            {
+                                                "Ref": "SAPInstanceNum"
+                                            },
+                                            "\n",
+                                            "export WaitForSAPInstallWaitHandle=",
+                                            "\"",
+                                            {
+                                                "Ref": "WaitForSAPInstallWaitHandle"
+                                            },
+                                            "\"",
+                                            "\n",
+                                            "export SIDadmUID=",
+                                            {
+                                                "Ref": "SIDadmUID"
+                                            },
+                                            "\n",
+                                            "export REGION=",
+                                            {
+                                                "Ref": "AWS::Region"
+                                            },
+                                            "\n"
+                                        ]
+                                    ]
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root"
+                            },
+                            "/root/install/APPX_D00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/APPX_D00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/ASCS_00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/ASCS_00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/DB_00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/DB_00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/PASX_D00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/PASX_D00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/NW75/ASCS_00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/NW75/ASCS_00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/NW75/DB_00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/NW75/DB_00_Linux_HDB.params"
+                                },
+                                "mode": "000500",
+                                "owner": "root",
+                                "group": "root",
+                                "authentication": "S3AccessCreds"
+                            },
+                            "/root/install/NW75/PASX_D00_Linux_HDB.params": {
+                                "source": {
+                                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}scripts/NW75/PASX_D00_Linux_HDB.params"
                                 },
                                 "mode": "000500",
                                 "owner": "root",
@@ -1885,7 +2468,7 @@
                                 {
                                     "Ref": "AWS::StackName"
                                 },
-                                "         --resource SAPPASInstance ",
+                                "         --resource SAPPASInstanceNoEFS ",
                                 "         --region ",
                                 {
                                     "Ref": "AWS::Region"
@@ -1900,7 +2483,7 @@
         "SAPAASStack": {
             "DependsOn": "WaitForSAPInstall",
             "Type": "AWS::CloudFormation::Stack",
-            "Condition": "InstallSAPAASCond",
+            "Condition": "UseEFS",
             "Properties": {
                 "TemplateURL": {
                     "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/sap-netweaver-abap-aas.template"
@@ -1908,6 +2491,12 @@
                 "Parameters": {
                     "AutoRecovery": {
                         "Ref": "AutoRecoveryAAS"
+                    },
+                    "EFSSapmnt": {
+                        "Ref": "EFSSapmnt"
+                    },
+                    "EFSFSName": {
+                        "Ref": "EFSFileSystem"
                     },
                     "HostedZoneID": {
                         "Ref": "HostedZone"
@@ -1917,6 +2506,9 @@
                     },
                     "InstallSAP": {
                         "Ref": "InstallSAP"
+                    },
+                    "InstallSAPVersion": {
+                        "Ref": "InstallSAPVersion"
                     },
                     "KeyName": {
                         "Ref": "KeyName"
@@ -1954,12 +2546,6 @@
                     "SAPHANAHostname": {
                         "Ref": "SAPHANAHostname"
                     },
-                    "SAPHANAIP": {
-                        "Fn::GetAtt": [
-                            "HANAStack",
-                            "Outputs.HANAMasterInstanceIP"
-                        ]
-                    },
                     "SAPInstanceNum": {
                         "Ref": "SAPInstanceNum"
                     },
@@ -1969,11 +2555,8 @@
                     "SAPPASHostname": {
                         "Ref": "SAPPASHostname"
                     },
-                    "SAPPASIP": {
-                        "Fn::GetAtt": [
-                            "SAPPASInstance",
-                            "PrivateIp"
-                        ]
+                    "SAPSchemaName": {
+                        "Ref": "SAPSchemaName"
                     },
                     "SAPTZ": {
                         "Ref": "SAPTZ"
@@ -1984,6 +2567,99 @@
                     "SIDadmUID": {
                         "Ref": "SIDadmUID"
                     },
+                    "SLESBYOSRegCode": {
+                        "Ref": "SLESBYOSRegCode"
+                    },
+                    "VPCID": {
+                        "Ref": "VPCID"
+                    }
+                }
+            }
+        },
+        "SAPAASStackNoEFS": {
+            "DependsOn": "WaitForSAPInstall",
+            "Type": "AWS::CloudFormation::Stack",
+            "Condition": "NoUseEFS",
+            "Properties": {
+                "TemplateURL": {
+                    "Fn::Sub": "https://${QSS3BucketName}.s3.amazonaws.com/${QSS3KeyPrefix}templates/sap-netweaver-abap-aas.template"
+                },
+                "Parameters": {
+                    "AutoRecovery": {
+                        "Ref": "AutoRecoveryAAS"
+                    },
+                    "HostedZoneID": {
+                        "Ref": "HostedZone"
+                    },
+                    "HostedZoneName": {
+                        "Ref": "HostedZoneName"
+                    },
+                    "InstallSAP": {
+                        "Ref": "InstallSAP"
+                    },
+                    "InstallSAPVersion": {
+                        "Ref": "InstallSAPVersion"
+                    },
+                    "KeyName": {
+                        "Ref": "KeyName"
+                    },
+                    "MyInstanceType": {
+                        "Ref": "AASMyInstanceType"
+                    },
+                    "MyOS": {
+                        "Ref": "MyOS"
+                    },
+                    "PrivateSubnet1CIDR": {
+                        "Ref": "PrivateSubnet1CIDR"
+                    },
+                    "PrivateSubnetID": {
+                        "Ref": "PrivateSubnetID"
+                    },
+                    "PrivateSubnet2CIDR": {
+                        "Ref": "PrivateSubnet2CIDR"
+                    },
+                    "PublicSubnet1CIDR": {
+                        "Ref": "PublicSubnet1CIDR"
+                    },
+                    "PublicSubnet2CIDR": {
+                        "Ref": "PublicSubnet2CIDR"
+                    },
+                    "QSS3BucketName": {
+                        "Ref": "QSS3BucketName"
+                    },
+                    "QSS3KeyPrefix": {
+                        "Ref": "QSS3KeyPrefix"
+                    },
+                    "SAPAASHostname": {
+                        "Ref": "SAPAASHostname"
+                    },
+                    "SAPHANAHostname": {
+                        "Ref": "SAPHANAHostname"
+                    },
+                    "SAPInstanceNum": {
+                        "Ref": "SAPInstanceNum"
+                    },
+                    "SAPNetWeaverPassSSMParamName": {
+                        "Ref": "SAPNetWeaverPassSSMParam"
+                    },
+                    "SAPPASHostname": {
+                        "Ref": "SAPPASHostname"
+                    },
+                    "SAPSchemaName": {
+                        "Ref": "SAPSchemaName"
+                    },
+                    "SAPTZ": {
+                        "Ref": "SAPTZ"
+                    },
+                    "SID": {
+                        "Ref": "SID"
+                    },
+                    "SIDadmUID": {
+                        "Ref": "SIDadmUID"
+                    },
+                    "SLESBYOSRegCode": {
+                        "Ref": "SLESBYOSRegCode"
+                    },
                     "VPCID": {
                         "Ref": "VPCID"
                     }
@@ -1991,20 +2667,38 @@
             }
         }
     },
+  "Rules": {
+    "EFSSupport": {
+    "RuleCondition" : {
+         "Fn::Equals": [
+                {
+                    "Ref": "EFSSapmnt"
+                },
+                "Yes"
+            ]
+        },
+      "Assertions": [
+        {
+          "Assert" : {"Fn::Contains": [["us-east-1", "us-east-2", "us-west-1", "us-west-2", "eu-west-1", "eu-central-1", "ap-southeast-2"], {"Ref": "AWS::Region"}]},
+          "AssertDescription": "!!ALERT: This is *not* an AWS Region that supports EFS!!"
+        }
+      ]
+    }
+  },
     "Outputs": {
+        "EFSFSName" : {
+            "Description" : "EFS file system name",
+            "Condition": "UseEFS",
+            "Value" :  { "Ref" : "EFSFileSystem" }
+        },
+        "EFSSapmnt" : {
+            "Description" : "Use EFS for /sapmnt",
+            "Value" :  { "Ref" : "EFSSapmnt" }
+        },
         "SAPNetWeaverPassSSMParam": {
             "Description": "EC2 SSM parameter store for encrypted SAP master password",
             "Value": {
                 "Ref": "SAPNetWeaverPassSSMParam"
-            }
-        },
-        "SAPPASInstanceIP": {
-            "Description": "SAP PAS IP Address",
-            "Value": {
-                "Fn::GetAtt": [
-                    "SAPPASInstance",
-                    "PrivateIp"
-                ]
             }
         },
         "SIDadmUID": {

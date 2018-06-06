@@ -2,11 +2,9 @@
 
 
 #
-
 #   This code was written by somckitk@amazon.com.
 #   This sample code is provided on an "AS IS" BASIS,
-#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-
+#   WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied
 #
 
 ###Global Variables###
@@ -16,6 +14,11 @@ NTP_CONF_FILE="/etc/ntp.conf"
 USR_SAP="/usr/sap"
 SAPMNT="/sapmnt"
 USR_SAP_DEVICE="/dev/xvdb"
+SAPMNT_DEVICE="/dev/xvdc"
+SWAP_DEVICE="/dev/xvdd"
+USR_SAP_VOL="xvdb"
+SAPMNT_VOL="xvdc"
+SWAP_VOL="xvdd"
 FSTAB_FILE="/etc/fstab"
 DHCP="/etc/sysconfig/network/dhcp"
 CLOUD_CFG="/etc/cloud/cloud.cfg"
@@ -24,37 +27,31 @@ HOSTS_FILE="/etc/hosts"
 HOSTNAME_FILE="/etc/HOSTNAME"
 NETCONFIG="/etc/sysconfig/network/config"
 ETC_SVCS="/etc/services"
+SAPMNT_SVCS="/sapmnt/SWPM/services"
 SERVICES_FILE="/sapmnt/SWPM/services"
-AUTO_MASTER="/etc/auto.master"
-AUTO_DIRECT="/etc/auto.direct"
-PRODUCT="NW_DI:NW740SR2.HDB.PIHA"
-INI_FILE="/sapmnt/SWPM/APPX_D00_Linux_HDB.params"
+SAPINST="/sapmnt/SWPM/sapinst"
 SW_TARGET="/sapmnt/SWPM"
 REGION=$(curl http://169.254.169.254/latest/dynamic/instance-identity/document/ | grep -i region | awk '{ print $3 }' | sed 's/"//g' | sed 's/,//g')
 MASTER_HOSTS="/sapmnt/SWPM/master_etc_hosts"
 HOSTNAME=$(hostname)
 
-#Set variables based on which SAP NW version we are installing
-
 if [ "$INSTALL_SAP_VERSION" == "SAP-NetWeaver-7.4" ]
 then
 
-    INI_FILE="/sapmnt/SWPM/APPX_D00_Linux_HDB.params"
-    PRODUCT="NW_DI:NW740SR2.HDB.PIHA"
+    PRODUCT="NW_ABAP_ASCS:NW740SR2.HDB.PIHA"
     SW_TARGET="/sapmnt/SWPM"
     SAPINST="/sapmnt/SWPM/sapinst"
     SRC_INI_DIR="/root/install"
-    INI_FILE="/sapmnt/SWPM/APPX_D00_Linux_HDB.params"
+    ASCS_INI_FILE="/sapmnt/SWPM/ASCS_00_Linux_HDB.params"
 
 
 else
 
-    INI_FILE="/sapmnt/SWPM/NW75/APPX_D00_Linux_HDB.params"
-    PRODUCT="NW_DI:NW750.HDB.ABAPHA"
+    PRODUCT="NW_ABAP_ASCS:NW750.HDB.ABAPHA"
     SW_TARGET="/sapmnt/SWPM/NW75"
     SAPINST="/sapmnt/SWPM/NW75/sapinst"
     SRC_INI_DIR="/root/install/NW75"
-    INI_FILE="/sapmnt/SWPM/NW75/APPX_D00_Linux_HDB.params"
+    ASCS_INI_FILE="/sapmnt/SWPM/NW75/ASCS_00_Linux_HDB.params"
 
 fi
 
@@ -62,14 +59,6 @@ fi
 ###  Variables below need to be CUSTOMIZED for your environment  ###
 
 
-#
-_TEMP_NAME=$(echo $NAME | cut -c1-3)
-#Do not quote the TEMP_NAME variable...doing so will preseve the "\"...which we don't want
-#USE a last random number
-RAND=$(expr $RANDOM % 100)
-TEMP_NAME=$_TEMP_NAME\temp"$RAND"
-TEMP_NAME_NR=$_TEMP_NAME\temp
-NUMBER_COUNT=2
 
 ###Functions###
 
@@ -141,7 +130,7 @@ set_oss_configs() {
 
     zypper -n install gcc
 
-    zypper install libgcc_s1 libstdc++6
+    zypper -n install libgcc_s1 libstdc++6
 
     echo "#END: This section inserted by AWS SAP HANA Quickstart" >> /etc/init.d/boot.local
     echo "###################" >> /etc/init.d/boot.local
@@ -163,48 +152,28 @@ set_awsdataprovider() {
 }
 
 
-set_aasinifile() {
-#set the vname of the database server in the INI file
+set_ascsinifile() {
+#set the vname of the ascs server in the INI file
 
-	sed -i  "/hdb.create.dbacockpit.user/ c\hdb.create.dbacockpit.user = true" $INI_FILE
+     sed -i  "/NW_SCS_Instance.ascsVirtualHostname/ c\NW_SCS_Instance.ascsVirtualHostname = ${HOSTNAME}" $ASCS_INI_FILE
+     sed -i  "/NW_GetMasterPassword.masterPwd/ c\NW_GetMasterPassword.masterPwd = ${MP}" $ASCS_INI_FILE
+     sed -i  "/hostAgent.sapAdmPassword/ c\hostAgent.sapAdmPassword = ${MP}" $ASCS_INI_FILE
 
-	#set the password from the SSM parameter store
-	sed -i  "/NW_HDB_getDBInfo.systemPassword/ c\NW_HDB_getDBInfo.systemPassword = ${MP}" $INI_FILE
-	sed -i  "/storageBasedCopy.hdb.systemPassword/ c\storageBasedCopy.hdb.systemPassword = ${MP}" $INI_FILE
-	sed -i  "/HDB_Schema_Check_Dialogs.schemaPassword/ c\HDB_Schema_Check_Dialogs.schemaPassword = ${MP}" $INI_FILE
-	sed -i  "/NW_GetMasterPassword.masterPwd/ c\NW_GetMasterPassword.masterPwd = ${MP}" $INI_FILE
-    sed -i  "/NW_HDB_getDBInfo.systemDbPassword/ c\NW_HDB_getDBInfo.systemDbPassword = ${MP}" $INI_FILE
+     #set the SID
+     sed -i  "/NW_GetSidNoProfiles.sid/ c\NW_GetSidNoProfiles.sid = ${SAP_SID}" $ASCS_INI_FILE
 
-
-	#set the profile directory
-	sed -i  "/NW_readProfileDir.profileDir/ c\NW_readProfileDir.profileDir = /sapmnt/${SAP_SID}/profile" $INI_FILE
-
-
-	#set the Schema 
-	sed -i  "/HDB_Schema_Check_Dialogs.schemaName/ c\HDB_Schema_Check_Dialogs.schemaName = ${SAP_SCHEMA_NAME}" $INI_FILE
-
-	#set the UID and GID
-	sed -i  "/nwUsers.sidAdmUID/ c\nwUsers.sidAdmUID = ${SIDadmUID}" $INI_FILE
-	sed -i  "/nwUsers.sapsysGID/ c\nwUsers.sapsysGID = ${SAPsysGID}" $INI_FILE
+     #set the UID and GID
+     sed -i  "/nwUsers.sidAdmUID/ c\nwUsers.sidAdmUID = ${SIDadmUID}" $ASCS_INI_FILE
+     sed -i  "/nwUsers.sapsysGID/ c\nwUsers.sapsysGID = ${SAPsysGID}" $ASCS_INI_FILE
 
      #set the CD location based on $SW_TARGET
-     sed -i  "/SAPINST.CD.PACKAGE.KERNEL/ c\SAPINST.CD.PACKAGE.KERNEL = ${SW_TARGET}/KERN_CD" $INI_FILE
-     sed -i  "/SAPINST.CD.PACKAGE.RDBMS/ c\SAPINST.CD.PACKAGE.RDBMS = ${SW_TARGET}/HDB_CLNTCD" $INI_FILE
-     sed -i  "/SAPINST.CD.PACKAGE.LOAD/ c\SAPINST.CD.PACKAGE.LOAD = ${SW_TARGET}/EXP_CD" $INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.KERNEL/ c\SAPINST.CD.PACKAGE.KERNEL = ${SW_TARGET}/KERN_CD" $ASCS_INI_FILE
+     sed -i  "/SAPINST.CD.PACKAGE.RDBMS/ c\SAPINST.CD.PACKAGE.RDBMS = ${SW_TARGET}/HDB_CLNTCD" $ASCS_INI_FILE
 
-
-    _VAL_MP=$(grep "$MP" $INI_FILE)
-	_VAL_SAP_SID=$(grep "$SAP_SID" $INI_FILE)
-
-	if [ -n "$_VAL_MP" -a "$_VAL_SAP_SID" ]
-	then
-		echo 0
-	else
-		echo 1
-	fi
 }
 
-set_cleanup_aasinifile() {
+
+set_cleanup_ascsinifile() {
 #clean up the INI file after finishing the SAP install
 
 MP="DELETED"
@@ -257,27 +226,25 @@ set_install_jq () {
 set_filesystems() {
 #create /usr/sap filesystem and mount /sapmnt
 
-	#bash /root/install/create-attach-single-volume.sh "50:gp2:$USR_SAP_DEVICE:$USR_SAP" > /dev/null
-	USR_SAP_VOLUME=$(lsblk | grep xvdb)
 
-	#allocate SWAP space
-	#bash /root/install/create-attach-single-volume.sh "50:gp2:/dev/xvdc:SWAP" > /dev/null
+	    #bash /root/install/create-attach-single-volume.sh "50:gp2:$USR_SAP_DEVICE:$USR_SAP" > /dev/null
+	    USR_SAP_VOLUME=$(lsblk  | grep $USR_SAP_VOL)
 
-	if [ -z "$USR_SAP_VOLUME" ]
-	then
-		echo "Exiting, can not create $USR_SAP_DEVICE or $SAPMNT_DEVICE EBS volumes"
-	        #signal the waithandler, 1=Failed
-	        /root/install/signalFinalStatus.sh 1 "Exiting, can not create $USR_SAP_DEVICE or $SAPMNT_DEVICE EBS volumes"
-	        set_cleanup_aasinifile
-		exit 1
-	else
-		mkdir $USR_SAP > /dev/null 2>&1
-		mkfs -t xfs $USR_SAP_DEVICE > /dev/null 2>&1
-		echo "$USR_SAP_DEVICE  $USR_SAP xfs nobarrier,noatime,nodiratime,logbsize=256k 0 0" >> $FSTAB_FILE 2>&1
-		mount -a > /dev/null 2>&1
-		mkswap /dev/xvdc > /dev/null 2>&1
-		swapon /dev/xvdc > /dev/null 2>&1
-	fi
+	    if [ -z "$USR_SAP_VOLUME" ]
+	    then
+		    echo "Exiting, can not create $USR_SAP_DEVICE or $SAPMNT_DEVICE EBS volumes"
+	            #signal the waithandler, 1=Failed
+	            /root/install/signalFinalStatus.sh 1 "Exiting, can not create $USR_SAP_DEVICE or $SAPMNT_DEVICE EBS volumes"
+	            set_cleanup_ascsinifile
+		    exit 1
+	    else
+		    mkdir $USR_SAP > /dev/null 2>&1
+		    mkfs -t xfs $USR_SAP_DEVICE > /dev/null 2>&1
+		    echo "$USR_SAP_DEVICE  $USR_SAP xfs nobarrier,noatime,nodiratime,logbsize=256k 0 0" >> $FSTAB_FILE 2>&1
+		    mount -a > /dev/null 2>&1
+		    mkswap $SWAP_DEVICE > /dev/null 2>&1
+		    swapon $SWAP_DEVICE > /dev/null 2>&1
+	    fi
 
 }
 
@@ -296,10 +263,6 @@ set_dhcp() {
 		echo 1
 	fi
 }
-
-
-
-
 
 set_DB_hostname() {
 
@@ -346,12 +309,36 @@ set_services_file() {
 	cat "$SERVICES_FILE" >> $ETC_SVCS
 }
 
+set_nfsexport() {
+#export the /sapmnt filesystem
+     #need to check if /sapmnt filesystem files exists
+
+     FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+
+     if [ "$FS_SAPMNT" ]
+     then
+	      echo "$SAPMNT      *(rw,no_root_squash,no_subtree_check)" >> /etc/exports
+          chkconfig nfs on
+          service nfsserver start
+          echo "service nfsserver start" >> /etc/init.d/boot.local
+          sleep 15
+          exportfs -a
+	      echo 0
+     else
+          #did not sucessfully export
+          echo 1
+     fi
+
+}
+
 set_sapmnt() {
-#setup /sapmnt from the ASCS or from EFS
+#setup /sapmnt from the ASCS
 
 
-	mkdir  $SAPMNT > /dev/null
-    mkdir $SW > /dev/null
+	mkdir  $SAPMNT
+    
+    #look for the SAPMNT volume
+    SAPMNT_VOLUME=$(lsblk | grep $SAPMNT_VOL ) > /dev/null
 
 
     #Check if EFS is in use, if EFS is in use then we mount up from the EFS share
@@ -388,101 +375,79 @@ set_sapmnt() {
             mount /sapmnt  > /dev/null
             sleep 60
         fi
-
     else
-            if [ "$DistributedInstall" == "Yes" ]
-            then 
-    
-                    #If EFS is *no*, we mount the /sapmnt filesystem from the ASCS server (Distributed Install) or PAS Server (non-Distributed Install).
-                    #Supporting a single-AZ /sapmnt scenario is for intra-AZ fail-over scenarios.
+        #EFS is no, so we create a local /sapmnt filesystem and share it out
+        if [ -z "$SAPMNT_VOLUME" ]
+        then
+            echo "Exiting, can not create $SAPMNT_DEVICE EBS volues" 
+            #signal the waithandler, 1=Failed
+            /root/install/signalFinalStatus.sh 1 "Exiting, can not create $SAPMNT_DEVICE EBS volues"
+            set_cleanup_inifiles
+            exit 1
+        else
+            mkdir $SAPMNT > /dev/null
+            mkdir $SW > /dev/null
+        fi
 
+         mkfs -t xfs $SAPMNT_DEVICE > /dev/null
 
-                    #Mount /sapmnt from the ASCS server
+         #create /etc/fstab entries
+         echo "$SAPMNT_DEVICE   $SAPMNT  xfs nobarrier,noatime,nodiratime,logbsize=256k 0 0" >> $FSTAB_FILE
 
-                    echo ""$ASCS_NAME:$SAPMNT"  "$SAPMNT"  nfs rw,soft,bg,timeo=3,intr 0 0"  >> $FSTAB_FILE
+        #try to mount /sapmnt 3 times 
+        mount /sapmnt > /dev/null
+        sleep 5
 
+        #validate /sapmnt filesystems were created and mounted
+        FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
 
-                    #try to mount /sapmnt 3 times 
-                    mount /sapmnt > /dev/null
-                    sleep 5
+        if [ -z "$FS_SAPMNT" ]
+        then
 
-                   #validate /sapmnt filesystems were created and mounted
-                    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+            mount /sapmnt > /dev/null
+            sleep 15
+        fi
 
-                    if [ -z "$FS_SAPMNT" ]
-                    then
+       #validate /sapmnt filesystems were created and mounted
+        FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
 
-                        mount /sapmnt > /dev/null
-                        sleep 15
-                    fi
+        if [ -z "$FS_SAPMNT" ]
+        then
 
-                   #validate /sapmnt filesystems were created and mounted
-                    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+            mount /sapmnt > /dev/null
+            sleep 60
+        fi
 
-                    if [ -z "$FS_SAPMNT" ]
-                    then
+         #validate /usr/sap and /sapmnt filesystems were created and mounted
+         FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
 
-                        mount /sapmnt > /dev/null
-                        sleep 60
-                    fi
-                    #validate /sapmnt filesystems were created and mounted
-                    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
+        if [ -z "$FS_SAPMNT" ]
+        then
+	        #we did not successfully created the filesystems and mount points	
+	        echo 1
+        else
+	        #we did successfully created the filesystems and mount points
+            #we now share it out, call teh set_nfsexport function
 
-                    if [ -z "$FS_SAPMNT" ]
-                    then
-	                    #we did not successfully created the filesystems and mount points	
-	                    echo 1
-                    else
-	                    #we did successfully created the filesystems and mount points
-                        echo 0
-                    fi
-             else
-    
-                    #Mount /sapmnt from the PAS server
+            set_nfsexport
+        
+            echo
+            echo "Start set_nfsexport @ $(date) from withing set_sapmnt function"
+            echo
+            _SET_NFS=$(set_nfsexport)
 
-                    echo ""$SAP_PAS:$SAPMNT"  "$SAPMNT"  nfs rw,soft,bg,timeo=3,intr 0 0"  >> $FSTAB_FILE
-
-
-                    #try to mount /sapmnt 3 times 
-                    mount /sapmnt > /dev/null
-                    sleep 5
-
-                   #validate /sapmnt filesystems were created and mounted
-                    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
-
-                    if [ -z "$FS_SAPMNT" ]
-                    then
-
-                        mount /sapmnt > /dev/null
-                        sleep 15
-                    fi
-
-                   #validate /sapmnt filesystems were created and mounted
-                    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
-
-                    if [ -z "$FS_SAPMNT" ]
-                    then
-
-                        mount /sapmnt > /dev/null
-                        sleep 60
-                    fi
-
-                    #validate /sapmnt filesystems were created and mounted
-                    FS_SAPMNT=$(df -h | grep "$SAPMNT" | awk '{ print $NF }')
-
-                    if [ -z "$FS_SAPMNT" ]
-                    then
-	                    #we did not successfully created the filesystems and mount points	
-	                    echo 1
-                    else
-	                    #we did successfully created the filesystems and mount points
-                        echo 0
-                    fi
+            if [ "$_SET_NFS" == 0 ]
+            then
+                 echo "Successfully set and exported /sapmnt"
+            else
+                 echo "FAILED to set /sapmnt"
+                 /root/install/signalFinalStatus.sh 1 "FAILED to set /sapmnt filesyste"
+                 exit
             fi
-    fi
-
+	        echo 0
+        fi
+  fi
 }
-
 
 set_uuidd() {
 #Install the uuidd daemon per SAP Note 1391070
@@ -510,43 +475,6 @@ set_update_cli() {
 	_AWS_CLI=$(aws --version 2>&1)
 
 	if [ -n "$_AWS_CLI" ]
-	then
-		echo 0
-	else
-		echo 1
-	fi
-}
-
-set_ini_file () {
-#set the correct SAP PARAMS file based on SAP App Server name
-
-   cd "$SRC_INI_DIR" 
-   cp APPX*.params  "$SW_TARGET"
-
-
-    if [ ! -e "$INI_FILE" ]
-	then
-		#No template files - exit
-		FNAME=$(echo $INI_FILE | awk -F"/" '{ print $4 }')
-                #signal failure and do not proceed
-                set_cleanup_aasinifile
-                #signal the waithandler, 1=Failure
-                /root/install/signalFinalStatus.sh 1 "There is no INI_FILE for silent SAP Install - Failure"
-		        echo 1
-                exit 1
-	fi
-
-    cp $INI_FILE $INI_FILE.$HOSTNAME
-
-	sed -i  "/NW_DI_Instance.virtualHostname/ c\NW_DI_Instance.virtualHostname = ${HOSTNAME}" $INI_FILE.$HOSTNAME
-
-	echo "$INI_FILE.$HOSTNAME" > /tmp/INI_FILE
-
-	SID=$(grep -i "NW_GetSidNoProfiles.sid" "$SW_TARGET"/ASCS*.params | awk '{ print $NF }' | tr '[A-Z]' '[a-z]')
-	SIDADM=$(echo $SID\adm)
-	echo $SIDADM > /tmp/SIDADM
-
-	if [ -n "$SIDADM" ]
 	then
 		echo 0
 	else
@@ -582,26 +510,68 @@ set_install_ssm() {
 
 
 
-set_configSAPWP() {
-#configure the SAP workprocesses per the CF input parameter
-#D = Optimize for Dialog processes, B = Optimize for Batch processes
+set_s3_download() {
+#download the s/w
+          
 
-	cd /sapmnt/"$SAP_SID"/profile 
-	LOCHOST=$(hostname)
-	SAP_PROF=$(ls *$LOCHOST)
+          #download the media from the S3 bucket provided
+          _S3_DL=$(aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" 2>&1 >/dev/null | grep "download failed")
 
-	if [[ "$SAPWP" == "D" ]]
-	then
-		sed -i  "/wp_no_dia =/ c\rdisp\/wp_no_dia = 60" $SAP_PROF
-		sed -i  "/wp_no_btc =/ c\rdisp\/wp_no_btc = 1" $SAP_PROF
-	elif [[ "$SAPWP" == "B" ]]
-	then
-		sed -i  "/wp_no_dia =/ c\rdisp\/wp_no_dia = 1" $SAP_PROF
-		sed -i  "/wp_no_btc =/ c\rdisp\/wp_no_btc = 60" $SAP_PROF
-	else
-		#Do nothing default config
-		echo
-	fi
+          if [ -n "$S3_DL" ]
+          then
+               #download failed for some reason, try to download again
+               _S3_DL2=$(aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" 2>&1 >/dev/null | grep "download failed")
+        
+              if [ -n "$S3_DL2" ]
+              then
+                   #download failed on 2nd try, exit
+                   echo 1
+                   return
+              fi
+              
+          fi
+
+	      cd "$SRC_INI_DIR" 
+          cp *.params  "$SW_TARGET"
+
+          if [ -d "$SAPINST" ]
+          then
+              chmod -R 755 $SW_TARGET > /dev/null 
+	          cd "$SRC_INI_DIR" 
+              cp *.params  "$SW_TARGET"
+              echo 0
+          else
+	      #retry the download again
+              aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" > /dev/null
+              #aws s3 sync "$S3_BUCKET/$S3_BUCKET_KP" "$SW_TARGET" > /dev/null
+
+
+ 	      if [ -d "$SAPINST" ]
+	      then
+              	   chmod -R 755 $SW_TARGET > /dev/null 
+	          cd "$SRC_INI_DIR" 
+              cp *.params  "$SW_TARGET"
+                   echo 0
+              else
+                   echo 1
+
+              fi
+          fi
+}
+
+set_save_services_file() {
+#save the /etc/services file from the ASCS instance for other instances
+
+     grep -i sap "$ETC_SVCS" > "$SAPMNT_SVCS"
+
+     #need to check if services files exists
+     if [ -s "$SAPMNT_SVCS" ]
+     then
+          echo 0
+     else
+          echo 1
+     fi
+
 }
 
 set_SUSE_BYOS() {
@@ -663,7 +633,7 @@ else
 	echo "FAILED to set hostname"
 	#signal the waithandler, 1=Failed
         /root/install/signalFinalStatus.sh 1 "Failed to set hostname"
-	set_cleanup_aasinifile
+	set_cleanup_ascsinifile
 	exit 1
 fi
 
@@ -676,11 +646,12 @@ else
 	echo "FAILED to install AWS CLI...exiting"
 	#signal the waithandler, 1=Failed
         /root/install/signalFinalStatus.sh 1 "FAILED to install AWS CLI...exiting"
-	set_cleanup_aasinifile
+	set_cleanup_ascsinifile
 	exit 1
 fi
 
 set_oss_configs
+
 
 _SET_SSM=$(set_install_ssm)
 
@@ -691,7 +662,7 @@ else
 	echo "FAILED to install SSM...exiting"
 	#signal the waithandler, 1=Failed
         /root/install/signalFinalStatus.sh 1 "FAILED to install ssm...exiting"
-	set_cleanup_aasinifile
+	set_cleanup_ascsinifile
 	exit 1
 fi
 
@@ -703,7 +674,6 @@ then
 	echo "Successfully installed UUIDD"
 else
 	echo "FAILED to install UUIDD...exiting"
-
 fi
 
 
@@ -716,7 +686,7 @@ else
 	echo "FAILED to update TimeZone...exiting"
 	#signal the waithandler, 1=Failed
         /root/install/signalFinalStatus.sh 1 "FAILED to update TimeZone...exiting"
-	set_cleanup_aasinifile
+	set_cleanup_ascsinifile
 	exit 1
 fi
 
@@ -729,11 +699,25 @@ else
 	echo "FAILED to update NTP...exiting"
 	#signal the waithandler, 1=Failed
         /root/install/signalFinalStatus.sh 1 "FAILED to update NTP...exiting"
-	set_cleanup_aasinifile
+	set_cleanup_ascsinifile
 	exit 1
 fi
 
 set_install_jq
+
+_SET_AWSDP=$(set_awsdataprovider)
+
+if [ "$_SET_AWSDP" == 0 ]
+then
+	echo "Successfully installed AWS Data Provider"
+else
+	echo "FAILED to install AWS Data Provider...exiting"
+	#signal the waithandler, 1=Failed
+        /root/install/signalFinalStatus.sh 1 "Failed to install AWS Data Provider...exiting"
+	set_cleanup_ascsinifile
+	exit 1
+fi
+
 
 _SET_FILESYSTEMS=$(set_filesystems)
 
@@ -746,21 +730,86 @@ else
 	echo "FAILED to update $USR_SAP filesystem...exiting"
 	#signal the waithandler, 1=Failed
         /root/install/signalFinalStatus.sh 1 "FAILED to  update $USR_SAP filesystem...exiting"
-	set_cleanup_aasinifile
+	set_cleanup_ascsinifile
 	exit 1
 fi
 
-_SET_AWSDP=$(set_awsdataprovider)
 
-if [ "$_SET_AWSDP" == 0 ]
+_SET_SAPMNT=$(set_sapmnt)
+
+_SAPMNT=$(df -h $SAPMNT | awk '{ print $NF }' | tail -1)
+
+
+if [ "$_SAPMNT" == "$SAPMNT"  ]
 then
-	echo "Successfully installed AWS Data Provider"
+	echo "Successfully setup /sapmnt"
 else
-	echo "FAILED to install AWS Data Provider...exiting"
+	echo "Failed to mount $SAPMNT...exiting"
 	#signal the waithandler, 1=Failed
-        /root/install/signalFinalStatus.sh 1 "Failed to install AWS Data Provider...exiting"
-	set_cleanup_aasinifile
+       	/root/install/signalFinalStatus.sh 1 "Failed to mount $SAPMNT, tried $COUNT times...exiting"
+	set_cleanup_ascsinifile
 	exit 1
+fi
+
+
+#recreate the SSM param store as encrypted
+_MPINV=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $1}' | grep INVALID | wc -l)
+
+_MPVAL=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $NF}' | wc -l)
+
+#_MPINV will be 1 when aws ssm get-parameters returns the INVALID response
+
+while [ "$_MPVAL" -eq 0 -a "$_MPINV" -eq 1 ]
+do
+	echo "Waiting for SSM parameter store: $SSM_PARAM_STORE @ $(date)..."
+    #_MPINV will be 0 when aws ssm get-parameters command returns a valid response
+	_MPINV=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $1}' | grep INVALID | wc -l)
+	sleep 15
+done
+
+
+MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $4}')
+INVALID_MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $1}')
+
+if [ "$INVALID_MP" == "INVALIDPARAMETERS" ]
+then
+	echo "Invalid encrypted SSM Parameter store: $SSM_PARAM_STORE...exiting"
+	#signal the waithandler, 1=Failed
+        /root/install/signalFinalStatus.sh 1 "Invalid SSM Parameter Store...exiting"
+	set_cleanup_ascsinifile
+	exit 1
+fi
+
+if [ -z "$MP" ]
+then
+	echo "Could not read encrypted SSM Parameter store: $SSM_PARAM_STORE...exiting"
+	#signal the waithandler, 1=Failed
+        /root/install/signalFinalStatus.sh 1 "Could not read encrypted SSM Parameter store: $SSM_PARAM_STORE...exiting"
+	set_cleanup_ascsinifile
+	exit 1
+fi
+
+#Download the s/w
+echo
+echo "Start set_s3_download @ $(date)"
+echo
+_SET_S3=$(set_s3_download)
+
+
+if [ "$_SET_S3" == 0 ]
+then
+     echo "Successfully downloaded the s/w"
+else
+     echo
+     echo "FAILED to download s/w to /sapmnt..."
+     echo "check /sapmnt/SWPM and permissions to your S3 SAP software bucket and key prefix:"$S3_BUCKET"/"$S3_BUCKET_KP" "
+     #log the error message
+     aws s3 sync "s3://${S3_BUCKET}/${S3_BUCKET_KP}" "$SW_TARGET" > /tmp/nw_s3_downnload_error.log 2>&1
+     S3_ERR=$(cat /tmp/nw_s3_downnload_error.log)
+     #signal the waithandler, 1=Failed
+     /root/install/signalFinalStatus.sh 1 \""FAILED to set /usr/sap and /sapmnt...check /sapmnt/SWPM and permissions to your S3 SAP software bucket:"$S3_BUCKET"/"$S3_BUCKET_KP" ERR= \"$S3_ERR\" "\"
+     set_cleanup_inifiles
+     exit
 fi
 
 
@@ -774,73 +823,22 @@ then
 
 fi
 
-MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $4}')
-INVALID_MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $1}')
-
-if [ "$INVALID_MP" == "INVALIDPARAMETERS" ]
-then
-	echo "Invalid encrypted SSM Parameter store: $SSM_PARAM_STORE...exiting"
-	#signal the waithandler, 1=Failed
-        /root/install/signalFinalStatus.sh 1 "Invalid SSM Parameter Store...exiting"
-	set_cleanup_aasinifile
-	exit 1
-fi
-
-if [ -z "$MP" ]
-then
-	echo "Could not read encrypted SSM Parameter store: $SSM_PARAM_STORE...exiting"
-	#signal the waithandler, 1=Failed
-        /root/install/signalFinalStatus.sh 1 "Could not read encrypted SSM Parameter store: $SSM_PARAM_STORE...exiting"
-	set_cleanup_aasinifile
-	exit 1
-fi
-
-
-_SET_SAPMNT=$(set_sapmnt)
-
-_SAPMNT=$(df -h $SAPMNT | awk '{ print $NF }' | tail -1)
-
-if [ "$_SAPMNT" == "$SAPMNT"  ]
-then
-	echo "Successfully setup /sapmnt"
-else
-	echo "Failed to mount $SAPMNT...exiting"
-	#signal the waithandler, 1=Failed
-       	/root/install/signalFinalStatus.sh 1 "Failed to mount $SAPMNT...exiting"
-	set_cleanup_aasinifile
-	exit 1
-fi
-
 
 ###Execute sapinst###
 
-set_ini_file
 
-INI_FILE=$(cat /tmp/INI_FILE)
-
-if [ ! -f "$INI_FILE" ]
-then
-	echo "Exiting script...no INI FILE...$INI_FILE"
-	#signal the waithandler, 1=Failed
-        /root/install/signalFinalStatus.sh 1 "Exiting script...no INI FILE...$INI_FILE"
-	set_cleanup_aasinifile
-	exit 1
-fi
-
-
-set_aasinifile
+set_ascsinifile
 
 cd $SAPINST
+sleep 1
+./sapinst SAPINST_INPUT_PARAMETERS_URL="$ASCS_INI_FILE" SAPINST_EXECUTE_PRODUCT_ID="$PRODUCT" SAPINST_USE_HOSTNAME="$HOSTNAME" SAPINST_SKIP_DIALOGS="true"
+
+SID=$(echo "$SAP_SID" |tr '[:upper:]' '[:lower:]')
+SIDADM=$(echo $SID\adm)
+
+su - "$SIDADM" -c "stopsap $HOSTNAME"
 sleep 5
-./sapinst SAPINST_INPUT_PARAMETERS_URL="$INI_FILE" SAPINST_EXECUTE_PRODUCT_ID="$PRODUCT" SAPINST_USE_HOSTNAME="$HOSTNAME" SAPINST_SKIP_DIALOGS="true"
-
-#configure SAP Workprocesses
-#set_configSAPWP
-
-SIDADM=$(cat /tmp/SIDADM)
-HOSTNAME=$(hostname)
-su - $SIDADM -c "stopsap $HOSTNAME"
-su - $SIDADM -c "startsap $HOSTNAME"
+su - "$SIDADM" -c "startsap $HOSTNAME"
 
 sleep 15
 
@@ -852,45 +850,73 @@ echo "This is the value of SAP_UP: $_SAP_UP"
 if [ "$_SAP_UP" -eq 1 ]
 then
 	echo "Successfully installed SAP"
-	set_cleanup_aasinifile
-	set_dist_hosts
-	#signal the waithandler, 0=Success
-        /root/install/signalFinalStatus.sh 0 "Successfully installed SAP. SAP_UP value is: $_SAP_UP"
-	#create the /etc/sap-app-quickstart file
+	set_cleanup_ascsinifile
+
+	
+    #create the /etc/sap-app-quickstart file
+    #Save the sap entries in /etc/services to the /sapmnt share for PAS and ASCS instances
+
+    _SET_SERVICES=$(set_save_services_file)
+
+    if [ "$_SET_SERVICES" == 0 ]
+    then
+         echo "Successfully set services file"
+    else
+         echo  "FAILED to set services file"
+     set_cleanup_inifiles
+     /root/install/signalFinalStatus.sh 1 "FAILED to set services file"
+     exit 1
+    fi
+
 	touch /etc/sap-app-quickstart
-	exit
+    #signal the waithandler, 0=Success
+    /root/install/signalFinalStatus.sh 0 "Successfully installed SAP. SAP_UP value is: $_SAP_UP"
+    exit 0
 else
-	#retry the install and exit if it failed again
-    cd $SAPINST
+	#retry the ASCS install
+    chown -R "$SIDADM" /sapmnt/$SAP_SID
+        cd $SAPINST
+    sleep 1
+    ./sapinst SAPINST_INPUT_PARAMETERS_URL="$ASCS_INI_FILE" SAPINST_EXECUTE_PRODUCT_ID="$PRODUCT" SAPINST_USE_HOSTNAME="$HOSTNAME" SAPINST_SKIP_DIALOGS="true"
+
     sleep 5
-    ./sapinst SAPINST_INPUT_PARAMETERS_URL="$INI_FILE" SAPINST_EXECUTE_PRODUCT_ID="$PRODUCT" SAPINST_USE_HOSTNAME="$HOSTNAME" SAPINST_SKIP_DIALOGS="true"
-
-    SIDADM=$(cat /tmp/SIDADM)
-    HOSTNAME=$(hostname)
-    su - $SIDADM -c "stopsap $HOSTNAME"
-    su - $SIDADM -c "startsap $HOSTNAME"
-
-    sleep 15
 
     #test if SAP is up
     _SAP_UP2=$(netstat -an | grep 32"$SAPInstanceNum" | grep tcp | grep LISTEN | wc -l )
 
+    echo "This is the value of SAP_UP2: $_SAP_UP2"
+
     if [ "$_SAP_UP2" -eq 1 ]
     then
-	    echo "Successfully installed SAP"
-	    set_cleanup_aasinifile
-	    set_dist_hosts
-	    #signal the waithandler, 0=Success
-        /root/install/signalFinalStatus.sh 0 "Successfully installed SAP. SAP_UP value is: $_SAP_UP"
-	    #create the /etc/sap-app-quickstart file
+    	echo "Successfully installed SAP"
+	    set_cleanup_ascsinifile
+
+	
+        #create the /etc/sap-app-quickstart file
+        #Save the sap entries in /etc/services to the /sapmnt share for PAS and ASCS instances
+
+        _SET_SERVICES=$(set_save_services_file)
+
+        if [ "$_SET_SERVICES" == 0 ]
+        then
+                echo "Successfully set services file"
+        else
+                echo  "FAILED to set services file"
+                set_cleanup_inifiles
+                /root/install/signalFinalStatus.sh 1 "FAILED to set services file"
+                exit 1
+        fi
+
 	    touch /etc/sap-app-quickstart
-	    exit
+        #signal the waithandler, 0=Success
+        /root/install/signalFinalStatus.sh 0 "Successfully installed SAP. SAP_UP value is: $_SAP_UP"
+        exit 0
     else
         echo "SAP installed FAILED."
-	    set_cleanup_aasinifile
+	    set_cleanup_ascsinifile
 	    #signal the waithandler, 0=Success
 	    _ERR_LOG=$(find /tmp -type f -name "sapinst_dev.log")
 	    _PASS_ERR=$(grep ERR "$_ERR_LOG" | grep -i password)
-	    /root/install/signalFinalStatus.sh 1 "SAP AAS install RETRY Failed...AAS not installed 2nd retry...password error?= "$_PASS_ERR" "
-    fi
+	    /root/install/signalFinalStatus.sh 1 "SAP ASCS install RETRY Failed...ASCS not installed 2nd retry...password error?= "$_PASS_ERR" "
+   fi
 fi

@@ -30,8 +30,8 @@ set_install_cfn() {
 	wget https://s3.amazonaws.com/cloudformation-examples/aws-cfn-bootstrap-latest.tar.gz
 	gzip -df aws-cfn-bootstrap-latest.tar.gz
 	tar -xvf aws-cfn-bootstrap-latest.tar
-        ln -s /tmp/aws-cfn-bootstrap-1.4 /opt/aws
-        chmod -R 755 /tmp/aws-cfn-bootstrap-1.4
+    ln -s /tmp/aws-cfn-bootstrap-1.4 /tmp/aws
+    chmod -R 755 /tmp/aws-cfn-bootstrap-1.4
 
 	zypper -n install python-pip
 
@@ -48,12 +48,11 @@ set_install_cfn() {
 [[ $# -ne 2 ]] && usage;
 
 
-if [ ! -L /opt/aws ]
-then
-        set_install_cfn
-fi
 
-export PYTHONPATH=/opt/aws:$PYTHONPATH
+set_install_cfn
+
+
+export PYTHONPATH=/tmp/aws:$PYTHONPATH
 
 SIGNAL="$1"
 MSG="$2"
@@ -61,9 +60,9 @@ MSG="$2"
 log `date` signalFinalStatus.sh
 
 if [ "${SIGNAL}" == "0" ]; then
-   /opt/aws/bin/cfn-signal -e "$SIGNAL" -r "$MSG" "${WaitForPASInstallWaitHandle}"
+   /tmp/aws/bin/cfn-signal -e "$SIGNAL" -r "$MSG" "${WaitForSAPInstallWaitHandle}"
 else
-   /opt/aws/bin/cfn-signal -e "$SIGNAL" -r "$MSG" "${WaitForPASInstallWaitHandle}"
+   /tmp/aws/bin/cfn-signal -e "$SIGNAL" -r "$MSG" "${WaitForSAPInstallWaitHandle}"
 fi
 
 log `date` END signalFinalStatus.sh
