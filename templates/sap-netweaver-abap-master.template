@@ -460,7 +460,6 @@
             "Type": "String"
         },
         "KeyName": {
-            "Default": "home",
             "Description": "Name of an existing Amazon EC2 key pair. All instances will launch with this key pair.",
             "Type": "AWS::EC2::KeyPair::KeyName"
         },
