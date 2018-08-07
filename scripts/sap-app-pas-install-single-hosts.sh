@@ -678,7 +678,9 @@ done
 #Save the password
 #_MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $NF}')
 ##The password used to be in $NF but moved to $4
-_MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $4}')
+#_MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $4}')
+
+_MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output table | grep Value | awk '{ print $4}')
 
 #Delete the existing SSM param store
 aws ssm delete-parameter --name $SSM_PARAM_STORE --region $REGION
