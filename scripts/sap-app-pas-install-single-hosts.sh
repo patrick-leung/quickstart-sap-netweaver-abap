@@ -692,7 +692,8 @@ aws ssm put-parameter --name $SSM_PARAM_STORE  --type "SecureString" --value "$_
 #Store the pass for the SAP param files
 #MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $NF}')
 ##The password used to be in $NF but moved to $4
-MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output text | awk '{ print $4}')
+MP=$(aws ssm get-parameters --names $SSM_PARAM_STORE --with-decryption --region $REGION --output table | grep Value | awk '{ print $4}')
+
 
 echo
 echo "Start set_install_jq @ $(date)"
