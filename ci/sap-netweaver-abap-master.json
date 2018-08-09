@@ -61,7 +61,7 @@
     },
     {
         "ParameterKey": "InstallRDPAndBastionInstance",
-        "ParameterValue": "Yes"
+        "ParameterValue": "No"
     },
     {
         "ParameterKey": "KeyName",
