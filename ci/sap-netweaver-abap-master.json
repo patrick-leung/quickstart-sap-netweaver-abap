@@ -97,7 +97,7 @@
     },
     {
         "ParameterKey": "QSS3BucketName",
-        "ParameterValue": "aws-quickstart-sk"
+        "ParameterValue": "aws-quickstart"
     },
     {
         "ParameterKey": "QSS3KeyPrefix",
