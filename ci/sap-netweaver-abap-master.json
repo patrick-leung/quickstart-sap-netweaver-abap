@@ -20,6 +20,14 @@
         "ParameterValue": "m4.large"
     },
     {
+        "ParameterKey": "DistributedInstall",
+        "ParameterValue": "Yes"
+    },
+    {
+        "ParameterKey": "EFSSapmnt",
+        "ParameterValue": "Yes"
+    },
+    {
         "ParameterKey": "Encryption",
         "ParameterValue": "No"
     },
