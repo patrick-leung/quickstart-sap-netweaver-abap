@@ -21,11 +21,11 @@
     },
     {
         "ParameterKey": "DistributedInstall",
-        "ParameterValue": "No"
+        "ParameterValue": "Yes"
     },
     {
         "ParameterKey": "EFSSapmnt",
-        "ParameterValue": "No"
+        "ParameterValue": "Yes"
     },
     {
         "ParameterKey": "Encryption",
