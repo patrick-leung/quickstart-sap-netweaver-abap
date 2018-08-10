@@ -96,14 +96,6 @@
         "ParameterValue": "10.0.144.0/20"
     },
     {
-        "ParameterKey": "QSS3BucketName",
-        "ParameterValue": "aws-quickstart"
-    },
-    {
-        "ParameterKey": "QSS3KeyPrefix",
-        "ParameterValue": "quickstart-sap-netweaver-abap/"
-    },
-    {
         "ParameterKey": "RDPInstanceType",
         "ParameterValue": "m4.large"
     },
