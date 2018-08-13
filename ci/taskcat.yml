@@ -1,0 +1,11 @@
+global:
+  marketplace-ami: false
+  owner: somckitk@amazon.com
+  qsname: quickstart-sap-netweaver-abap
+  regions:
+    - us-west-2
+  reporting: true
+tests:
+  master:
+    template_file: sap-netweaver-abap-master.template
+    parameter_input: sap-netweaver-abap-master.json
