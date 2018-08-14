@@ -41,7 +41,7 @@
     },
     {
         "ParameterKey": "SAPInstallMediaKeyPrefix",
-        "ParameterValue": "sap/netweaver/abap/740/"
+        "ParameterValue": "sap/netweaver/abap/750/"
     },
     {
         "ParameterKey": "HANAInstallMedia",
