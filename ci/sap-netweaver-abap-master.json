@@ -56,6 +56,10 @@
         "ParameterValue": "Yes"
     },
     {
+        "ParameterKey": "InstallSAPVersion",
+        "ParameterValue": "SAP-NetWeaver-7.5"
+    },
+    {
         "ParameterKey": "InstallSAPAAS",
         "ParameterValue": "Yes"
     },
