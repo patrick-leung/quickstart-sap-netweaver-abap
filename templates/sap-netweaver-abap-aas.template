@@ -374,8 +374,8 @@
             "Type": "String"
         },
         "SIDadmUID": {
-            "Default": "1001",
-            "Description": "UID (default is 1001) for the SIDadm user.",
+            "Default": "1002",
+            "Description": "UID (default is 1002) for the SIDadm user.",
             "Type": "String"
         },
         "SLESBYOSRegCode": {
