@@ -795,7 +795,11 @@ fi
 echo
 echo "Start set_s3_download @ $(date)"
 echo
-_SET_S3=$(set_s3_download)
+#_SET_S3=$(set_s3_download)
+set_s3_download 
+_SET_S3=$? 
+echo "EXIT CODE _SET_S3: $_SET_S3"
+
 
 
 if [ "$_SET_S3" == 0 ]
