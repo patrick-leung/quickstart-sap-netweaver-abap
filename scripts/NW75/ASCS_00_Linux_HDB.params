@@ -45,7 +45,7 @@ NW_SCS_Instance.ascsInstallWebDispatcher = false
 NW_SCS_Instance.ascsInstanceNumber =
 
 # ASCS instance virtual host name (leave empty for default)
-NW_SCS_Instance.ascsVirtualHostname = awssap
+NW_SCS_Instance.ascsVirtualHostname = 
 
 # Create file prxyinfo(.DAT) in the global directory, if it does not already exist and set gw/prxy_info in the default profile accordingly (default is false)
 NW_SCS_Instance.createGlobalProxyInfoFile = false
@@ -63,7 +63,7 @@ NW_SCS_Instance.scsInstanceNumber =
 NW_SCS_Instance.scsMSPort =
 
 # SCS instance virtual host name (leave empty for default)
-NW_SCS_Instance.scsVirtualHostname = awssap
+NW_SCS_Instance.scsVirtualHostname = 
 
 # For SAP internal use only
 NW_System.installSAPHostAgent = true
