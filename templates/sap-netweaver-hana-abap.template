@@ -1052,7 +1052,7 @@
                     "Ref": "EFSFileSystem"
                 },
                 "SubnetId": {
-                    "Ref": "PrivateSubnetID"
+                    "Ref": "PrivateSubnet1AID"
                 },
                 "SecurityGroups": [
                     {
