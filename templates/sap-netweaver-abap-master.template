@@ -25,7 +25,7 @@
                 "product-code.type":"marketplace"
               }
           }
-      }
+      },
         "AWS::CloudFormation::Interface": {
             "ParameterGroups": [
                 {
