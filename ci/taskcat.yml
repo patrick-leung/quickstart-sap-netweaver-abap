@@ -3,7 +3,7 @@ global:
   owner: somckitk@amazon.com
   qsname: quickstart-sap-netweaver-abap
   regions:
-    - us-west-2
+    - us-east-2
   reporting: true
 tests:
   master:
