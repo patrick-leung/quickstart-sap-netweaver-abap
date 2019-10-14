@@ -936,7 +936,7 @@
                 "SLES12SP3HVM": "ami-05561250b8346a707",
                 "SLES12SP3SAPBYOSHVM": "ami-09ec9562bc4bea66e",
                 "SLES12SP3SAPHVM": "ami-081e62a74b0decab1",
-                "WS2012R2": "ami-05c71b3ca4af2fbee"
+                "WS2012R2": "ami-05cd4c9c42e255074"
             },
             "us-west-2": {
                 "RHEL73SAPHVM": "ami-edfa4895",
